@@ -1,0 +1,31 @@
+name: ZApocalypseCore
+version: '${project.version}'
+main: dev.kodari.zombieapocalypse.ZombieApocalypsePlugin
+api-version: '26.3'
+description: Configurable zombie survival, firearm, and infection gameplay by SlimeX Development.
+author: slimexplays
+website: https://dsc.gg/slimexdev
+commands:
+  zombie:
+    description: Zombie Apocalypse administration and status commands.
+    usage: /zombie help
+    aliases: [za]
+  zrecipe:
+    description: Browse and craft registered survival recipes.
+    usage: /zrecipe list|search <term>|<item>|gui|craft <id>
+    permission: zombie.use
+  ztrade:
+    description: Test configured survivor trade offers.
+    usage: /ztrade list|buy <item> [amount]|sell <item> [amount]
+    permission: zombie.use
+  zstorage:
+    description: Configure access to a held custom storage item.
+    usage: /zstorage info|mode <private|team|public>
+    permission: zombie.use
+permissions:
+  zombie.use:
+    description: Use public Zombie Apocalypse commands.
+    default: true
+  zombie.admin:
+    description: Administer Zombie Apocalypse features.
+    default: op

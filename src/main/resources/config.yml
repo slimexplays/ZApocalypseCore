@@ -1,0 +1,383 @@
+# ZApocalypseCore
+# Made By @slimexplays | SlimeX Development | https://dsc.gg/slimexdev
+
+general:
+  enabled: true
+  debug: false
+  max-zombies-per-world: 200
+  max-spawn-per-command: 10
+
+worlds:
+  enabled: true
+  enabled-worlds: [] # Empty means all worlds.
+
+spawning:
+  enabled: true
+  interval-ticks: 1200
+  attempts-per-player: 1
+  min-distance-blocks: 24
+  max-distance-blocks: 48
+  night-only: true
+  hordes:
+    enabled: true
+    interval-ticks: 12000
+    min-size: 3
+    max-size: 6
+
+# Applies only during vanilla rain in enabled worlds. The event stops affecting players after its duration;
+# it does not alter weather or blocks. Shelter is determined by the highest block at the player's column.
+acid-rain:
+  enabled: false
+  damage-interval-seconds: 5
+  event-duration-seconds: 600
+  exposure-damage: 1.0
+  infection-chance-per-exposure: 0.0
+  warning: '&cAcid rain is burning your exposed skin!'
+
+ai:
+  enabled: true
+  update-interval-ticks: 20
+  detection-radius: 32.0
+  alert-radius: 40.0
+  noise-investigation-radius: 28.0
+  target-memory-seconds: 20
+  search-seconds: 12
+  tracked-zombies-per-update: 32
+
+noise:
+  movement-throttle-millis: 800
+  sneak-radius: 3.0
+  walk-radius: 8.0
+  sprint-radius: 18.0
+  jump-radius: 12.0
+  block-break-radius: 14.0
+  door-radius: 10.0
+
+variants:
+  normal: { name: '&7Zombie', health: 20.0, damage: 3.0, speed: 0.23, resistance: 0.0, spawn-chance: 1.0, drop-chance: 0.08 }
+  runner: { name: '&eRunner', health: 14.0, damage: 2.5, speed: 0.34, resistance: 0.0, spawn-chance: 0.12, drop-chance: 0.10 }
+  brute: { name: '&6Brute', health: 60.0, damage: 8.0, speed: 0.18, resistance: 0.8, spawn-chance: 0.04, drop-chance: 0.30 }
+  crawler: { name: '&7Crawler', health: 18.0, damage: 3.0, speed: 0.20, resistance: 0.1, spawn-chance: 0.08, drop-chance: 0.12 }
+  screamer: { name: '&dScreamer', health: 24.0, damage: 3.0, speed: 0.23, resistance: 0.1, spawn-chance: 0.05, drop-chance: 0.18 }
+  armored: { name: '&8Armored', health: 40.0, damage: 5.0, speed: 0.19, resistance: 0.5, spawn-chance: 0.05, drop-chance: 0.22 }
+  toxic: { name: '&2Toxic', health: 26.0, damage: 3.5, speed: 0.22, resistance: 0.1, spawn-chance: 0.04, drop-chance: 0.22 }
+  demolisher: { name: '&cDemolisher', health: 50.0, damage: 7.0, speed: 0.19, resistance: 0.6, spawn-chance: 0.03, drop-chance: 0.25 }
+  alpha: { name: '&cAlpha', health: 45.0, damage: 6.0, speed: 0.27, resistance: 0.4, spawn-chance: 0.02, drop-chance: 0.30 }
+  boss: { name: '&4Boss', health: 180.0, damage: 12.0, speed: 0.22, resistance: 0.9, spawn-chance: 0.002, drop-chance: 1.0 }
+  stealth: { name: '&8Stealth', health: 20.0, damage: 4.0, speed: 0.26, resistance: 0.0, spawn-chance: 0.03, drop-chance: 0.18 }
+  mutated: { name: '&5Mutated', health: 32.0, damage: 5.0, speed: 0.28, resistance: 0.3, spawn-chance: 0.01, drop-chance: 0.35 }
+  revenant: { name: '&4Infected Revenant', health: 50.0, damage: 7.0, speed: 0.28, resistance: 0.4, spawn-chance: 0.0, drop-chance: 0.4 }
+
+infection:
+  enabled: true
+  bite-probability: 0.12
+  infected-after-seconds: 900
+  critical-after-seconds: 1800
+  critical-death-after-seconds: 0 # Disabled by default; 0 means infection is non-lethal.
+  revenant-enabled: true
+  immunity-after-cure-seconds: 0
+
+regional-infection:
+  enabled: true
+  automatic-spread: false
+  update-interval-ticks: 1200
+  regions-per-update: 16
+  max-regions: 256
+  spread-radius-blocks: 512.0
+  spread-threshold: 50.0
+  spread-per-update: 1.0
+  decay-per-update: 0.25
+  notify-players: true
+  transition-message: '&cRegion %region% is now %type%.'
+  spawn-pressure:
+    enabled: true
+    ambient-attempts-at-100: 2
+    horde-size-at-100: 4
+  thresholds:
+    quarantined: 25.0
+    contaminated: 50.0
+    high-risk: 75.0
+  infection-chance-multipliers:
+    clean: 1.0
+    quarantined: 1.1
+    contaminated: 1.25
+    high-risk: 1.5
+  regions: {} # Define named cuboids in already-existing worlds; no worlds or structures are created.
+
+loot:
+  zombie-drops:
+    bandage: { chance: 0.10, min: 1, max: 2 }
+    scrap: { chance: 0.16, min: 1, max: 3 }
+    ammo_9mm: { chance: 0.15, min: 2, max: 8 }
+    ammo_45: { chance: 0.12, min: 2, max: 6 }
+    ammo_357: { chance: 0.10, min: 1, max: 5 }
+    ammo_12gauge: { chance: 0.12, min: 1, max: 4 }
+    ammo_556: { chance: 0.12, min: 2, max: 8 }
+    ammo_762: { chance: 0.10, min: 2, max: 6 }
+    ammo_308: { chance: 0.07, min: 1, max: 4 }
+    ammo_300blk: { chance: 0.08, min: 2, max: 6 }
+    ammo_545: { chance: 0.08, min: 2, max: 6 }
+    ammo_762x54: { chance: 0.05, min: 1, max: 4 }
+    ammo_50bmg: { chance: 0.02, min: 1, max: 2 }
+    pistol_9mm: { chance: 0.008, min: 1, max: 1 }
+    pistol_45: { chance: 0.006, min: 1, max: 1 }
+    revolver_357: { chance: 0.006, min: 1, max: 1 }
+    compact_smg: { chance: 0.003, min: 1, max: 1 }
+    ump45: { chance: 0.003, min: 1, max: 1 }
+    ak47: { chance: 0.003, min: 1, max: 1 }
+    m4_carbine: { chance: 0.003, min: 1, max: 1 }
+    famas_burst: { chance: 0.002, min: 1, max: 1 }
+    pump_shotgun: { chance: 0.003, min: 1, max: 1 }
+    riot_shotgun: { chance: 0.002, min: 1, max: 1 }
+    sawed_off: { chance: 0.004, min: 1, max: 1 }
+    bolt_sniper: { chance: 0.001, min: 1, max: 1 }
+    marksman_308: { chance: 0.002, min: 1, max: 1 }
+    lmg_556: { chance: 0.001, min: 1, max: 1 }
+    scavenger_carbine: { chance: 0.003, min: 1, max: 1 }
+    ranger_rifle: { chance: 0.002, min: 1, max: 1 }
+    frontier_revolver: { chance: 0.005, min: 1, max: 1 }
+    breacher_smg: { chance: 0.002, min: 1, max: 1 }
+    plague_suppressor: { chance: 0.001, min: 1, max: 1 }
+    heavy_50: { chance: 0.0005, min: 1, max: 1 }
+
+loot-search:
+  enabled: false
+  duration-seconds: 5
+  cooldown-seconds: 3600
+  max-distance-blocks: 4.5
+  containers: [BARREL, CHEST, TRAPPED_CHEST]
+  rarity-weights: { common: 70, uncommon: 24, rare: 5, epic: 1 }
+  rewards:
+    scrap: { rarity: common, weight: 5, min: 1, max: 4 }
+    cloth: { rarity: common, weight: 3, min: 1, max: 3 }
+    bandage: { rarity: common, weight: 2, min: 1, max: 2 }
+    ammo_9mm: { rarity: common, weight: 3, min: 2, max: 8 }
+    ammo_45: { rarity: uncommon, weight: 2, min: 2, max: 6 }
+    water_filter: { rarity: uncommon, weight: 1, min: 1, max: 1 }
+    medkit: { rarity: uncommon, weight: 1, min: 1, max: 1 }
+    ammo_556: { rarity: uncommon, weight: 2, min: 2, max: 8 }
+    ammo_308: { rarity: rare, weight: 2, min: 1, max: 4 }
+    pistol_9mm: { rarity: rare, weight: 1, min: 1, max: 1 }
+    bolt_sniper: { rarity: epic, weight: 1, min: 1, max: 1 }
+
+items:
+  bandage: { material: PAPER, name: '&fBandage', rarity: COMMON, cure: false, heal: 2.0 }
+  medkit: { material: PAPER, name: '&aMedkit', rarity: UNCOMMON, cure: false, heal: 6.0, cooldown-seconds: 5 }
+  cure_kit: { material: PAPER, name: '&bCure Kit', rarity: RARE, cure: true }
+  canned_food: { material: ROTTEN_FLESH, name: '&6Canned Food', rarity: COMMON, cure: false, food-level: 5, saturation: 3.0, hydration: 1.0, perishable: true }
+  ration_pack: { material: BREAD, name: '&eRation Pack', rarity: UNCOMMON, cure: false, food-level: 8, saturation: 6.0, hydration: 1.0, perishable: true }
+  clean_water: { material: GLASS_BOTTLE, name: '&bClean Water', rarity: COMMON, cure: false, hydration: 30.0, return-empty-bottle: true }
+  contaminated_water: { material: GLASS_BOTTLE, name: '&cContaminated Water', rarity: UNCOMMON, cure: false, hydration: 18.0, contamination-effect: POISON, contamination-chance: 0.5, effect-duration-ticks: 100, return-empty-bottle: true }
+  refillable_bottle: { material: GLASS_BOTTLE, name: '&7Refillable Bottle', rarity: COMMON, cure: false }
+  water_filter: { material: PAPER, name: '&bWater Filter', rarity: UNCOMMON, cure: false }
+  spoiled_food: { material: ROTTEN_FLESH, name: '&8Spoiled Food', rarity: COMMON, cure: false }
+  scrap: { material: IRON_NUGGET, name: '&7Scrap', rarity: COMMON, cure: false }
+  cloth: { material: STRING, name: '&fCloth', rarity: COMMON, cure: false }
+  metal_parts: { material: IRON_INGOT, name: '&8Metal Parts', rarity: UNCOMMON, cure: false }
+  components: { material: REDSTONE, name: '&cComponents', rarity: RARE, cure: false }
+  repair_supplies: { material: IRON_INGOT, name: '&7Repair Supplies', rarity: UNCOMMON, cure: false }
+  first_aid_kit: { material: PAPER, name: '&aFirst Aid Kit', rarity: UNCOMMON, cure: false, heal: 6.0, cooldown-seconds: 5 }
+  advanced_medkit: { material: PAPER, name: '&2Advanced Medkit', rarity: RARE, cure: false, heal: 12.0, cooldown-seconds: 10 }
+  antiseptic: { material: GLASS_BOTTLE, name: '&bAntiseptic', rarity: UNCOMMON, cure: false, effect: REGENERATION, effect-duration-ticks: 100, effect-amplifier: 0, cooldown-seconds: 5 }
+  pain_relief_kit: { material: PAPER, name: '&ePain Relief Kit', rarity: UNCOMMON, cure: false, effect: RESISTANCE, effect-duration-ticks: 100, effect-amplifier: 0, cooldown-seconds: 10 }
+  infection_cure_kit: { material: PAPER, name: '&bInfection Cure Kit', rarity: RARE, cure: true, cooldown-seconds: 30 }
+  antidote: { material: POTION, name: '&dAntidote', rarity: RARE, cure: false, infection-reduction: true, cooldown-seconds: 30 }
+  vaccine: { material: POTION, name: '&aVaccine', rarity: RARE, cure: false, immunity-seconds: 3600, cooldown-seconds: 60 }
+  immunity_item: { material: GOLDEN_APPLE, name: '&eTemporary Immunity', rarity: EPIC, cure: false, immunity-seconds: 600, cooldown-seconds: 60 }
+  basic_repair_kit: { material: PAPER, name: '&7Basic Repair Kit', rarity: COMMON, repair-durability: 100, repair-cost-item: repair_supplies, repair-cost-amount: 1 }
+  advanced_toolkit: { material: PAPER, name: '&bAdvanced Toolkit', rarity: RARE, repair-durability: 300, repair-cost-item: metal_parts, repair-cost-amount: 2 }
+  handheld_radio: { material: COMPASS, name: '&eHandheld Radio', rarity: UNCOMMON, radio-alert: check_in, consume-on-use: false }
+  emergency_beacon: { material: REDSTONE_TORCH, name: '&cEmergency Beacon', rarity: RARE, radio-alert: distress, consume-on-use: false }
+  gps_locator: { material: COMPASS, name: '&bGPS Locator', rarity: UNCOMMON, navigation-action: locate, consume-on-use: false }
+  paper_map: { material: PAPER, name: '&fPaper Map', rarity: COMMON, navigation-action: list, consume-on-use: false }
+  waypoint_marker: { material: GLOWSTONE_DUST, name: '&aWaypoint Marker', rarity: UNCOMMON, navigation-action: mark, consume-on-use: false }
+  gas_mask: { material: LEATHER_HELMET, name: '&8Gas Mask', rarity: UNCOMMON, infection-resistance: 0.15, protection: { toxic: { enabled: true } } }
+  hazmat_helmet: { material: LEATHER_HELMET, name: '&eHazmat Hood', rarity: RARE, infection-resistance: 0.25, protection: { toxic: { enabled: true }, contamination: { enabled: true } } }
+  hazmat_chest: { material: LEATHER_CHESTPLATE, name: '&eHazmat Jacket', rarity: RARE, infection-resistance: 0.25, protection: { contamination: { enabled: true } } }
+  hazmat_leggings: { material: LEATHER_LEGGINGS, name: '&eHazmat Trousers', rarity: RARE, infection-resistance: 0.25, protection: { contamination: { enabled: true } } }
+  acid_resistant_boots: { material: LEATHER_BOOTS, name: '&eAcid-Resistant Boots', rarity: RARE, protection: { acid: { enabled: true } } }
+  small_supply_crate: { material: BARREL, name: '&6Small Supply Crate', rarity: UNCOMMON, storage-size: 9, storage-access: PRIVATE }
+  large_supply_crate: { material: BARREL, name: '&6Large Supply Crate', rarity: RARE, storage-size: 27, storage-access: PRIVATE }
+  metal_locker: { material: CHEST, name: '&8Metal Locker', rarity: UNCOMMON, storage-size: 27, storage-access: PRIVATE }
+  medical_locker: { material: CHEST, name: '&cMedical Locker', rarity: RARE, storage-size: 27, storage-access: PRIVATE }
+  food_storage: { material: BARREL, name: '&eFood Storage', rarity: UNCOMMON, storage-size: 27, storage-access: PRIVATE }
+  personal_safe: { material: ENDER_CHEST, name: '&5Personal Safe', rarity: EPIC, storage-size: 27, storage-access: PRIVATE }
+  pistol_9mm: { material: CROSSBOW, name: '&f9mm Service Pistol', rarity: COMMON }
+  pistol_45: { material: IRON_SWORD, name: '&7.45 Caliber Pistol', rarity: UNCOMMON }
+  revolver_357: { material: GOLDEN_SWORD, name: '&6.357 Revolver', rarity: UNCOMMON }
+  compact_smg: { material: BOW, name: '&eCompact SMG', rarity: UNCOMMON }
+  ump45: { material: CROSSBOW, name: '&8.45 SMG', rarity: UNCOMMON }
+  ak47: { material: IRON_AXE, name: '&cAK-47', rarity: RARE }
+  m4_carbine: { material: DIAMOND_HOE, name: '&bM4 Carbine', rarity: RARE }
+  famas_burst: { material: NETHERITE_HOE, name: '&dFAMAS Burst Rifle', rarity: RARE }
+  pump_shotgun: { material: STONE_AXE, name: '&6Pump Shotgun', rarity: UNCOMMON }
+  riot_shotgun: { material: IRON_PICKAXE, name: '&8Riot Shotgun', rarity: RARE }
+  sawed_off: { material: STONE_SWORD, name: '&cSawed-Off Shotgun', rarity: UNCOMMON }
+  bolt_sniper: { material: CROSSBOW, name: '&bBolt-Action Sniper', rarity: EPIC }
+  marksman_308: { material: DIAMOND_SWORD, name: '&3.308 Marksman Rifle', rarity: EPIC }
+  lmg_556: { material: NETHERITE_AXE, name: '&4Light Machine Gun', rarity: EPIC }
+  scavenger_carbine: { material: STONE_PICKAXE, name: '&7Scavenger Carbine', rarity: UNCOMMON }
+  ranger_rifle: { material: IRON_HOE, name: '&2Ranger Rifle', rarity: RARE }
+  frontier_revolver: { material: WOODEN_SWORD, name: '&eFrontier Revolver', rarity: COMMON }
+  breacher_smg: { material: STONE_HOE, name: '&6Breacher SMG', rarity: RARE }
+  plague_suppressor: { material: DIAMOND_AXE, name: '&5Plague Suppressor', rarity: EPIC }
+  heavy_50: { material: NETHERITE_PICKAXE, name: '&4.50 Cal Heavy Rifle', rarity: LEGENDARY }
+  ammo_9mm: { material: IRON_NUGGET, name: '&f9mm Rounds', rarity: COMMON }
+  ammo_45: { material: GOLD_NUGGET, name: '&6.45 Rounds', rarity: COMMON }
+  ammo_357: { material: COPPER_INGOT, name: '&6.357 Rounds', rarity: UNCOMMON }
+  ammo_12gauge: { material: IRON_INGOT, name: '&712-Gauge Shells', rarity: COMMON }
+  ammo_556: { material: ARROW, name: '&e5.56 Rounds', rarity: COMMON }
+  ammo_762: { material: FLINT, name: '&87.62 x 39 Rounds', rarity: UNCOMMON }
+  ammo_308: { material: PRISMARINE_SHARD, name: '&3.308 Rounds', rarity: RARE }
+  ammo_300blk: { material: COPPER_NUGGET, name: '&6300 BLK Rounds', rarity: UNCOMMON }
+  ammo_545: { material: PRISMARINE_CRYSTALS, name: '&b5.45 Rounds', rarity: UNCOMMON }
+  ammo_762x54: { material: BLAZE_POWDER, name: '&c7.62 x 54 Rounds', rarity: RARE }
+  ammo_50bmg: { material: FIRE_CHARGE, name: '&4.50 BMG Rounds', rarity: EPIC }
+
+firearms:
+  enabled: true
+  max-range-blocks: 192
+  noise-radius: 80.0
+  zombie-damage-multipliers: { default: 1.0, armored: 0.65, boss: 0.55, revenant: 0.8 }
+  guns:
+    pistol_9mm: { ammo: ammo_9mm, magazine: 15, damage: 5.5, fire-mode: SEMI, fire-delay-ticks: 5, burst-shots: 1, reload-ticks: 28, range: 48, spread: 0.025, recoil: 1.4, pellets: 1, durability: 220, sound: ENTITY_ARROW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    pistol_45: { ammo: ammo_45, magazine: 8, damage: 7.0, fire-mode: SEMI, fire-delay-ticks: 7, burst-shots: 1, reload-ticks: 32, range: 42, spread: 0.03, recoil: 2.0, pellets: 1, durability: 190, sound: ITEM_CROSSBOW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    revolver_357: { ammo: ammo_357, magazine: 6, damage: 9.0, fire-mode: SEMI, fire-delay-ticks: 9, burst-shots: 1, reload-ticks: 38, range: 50, spread: 0.022, recoil: 2.2, pellets: 1, durability: 240, sound: ENTITY_ARROW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    compact_smg: { ammo: ammo_9mm, magazine: 30, damage: 4.2, fire-mode: AUTO, fire-delay-ticks: 3, burst-shots: 1, reload-ticks: 36, range: 44, spread: 0.055, recoil: 0.7, pellets: 1, durability: 420, sound: ENTITY_ARROW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    ump45: { ammo: ammo_45, magazine: 25, damage: 5.2, fire-mode: AUTO, fire-delay-ticks: 4, burst-shots: 1, reload-ticks: 40, range: 52, spread: 0.045, recoil: 1.0, pellets: 1, durability: 470, sound: ITEM_CROSSBOW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    ak47: { ammo: ammo_762, magazine: 30, damage: 7.4, fire-mode: AUTO, fire-delay-ticks: 4, burst-shots: 1, reload-ticks: 42, range: 68, spread: 0.052, recoil: 1.8, pellets: 1, durability: 520, sound: ENTITY_ARROW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    m4_carbine: { ammo: ammo_556, magazine: 30, damage: 5.8, fire-mode: AUTO, fire-delay-ticks: 3, burst-shots: 1, reload-ticks: 36, range: 76, spread: 0.04, recoil: 1.1, pellets: 1, durability: 540, sound: ITEM_CROSSBOW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    famas_burst: { ammo: ammo_556, magazine: 25, damage: 6.0, fire-mode: BURST, fire-delay-ticks: 3, burst-shots: 3, reload-ticks: 38, range: 72, spread: 0.035, recoil: 1.2, pellets: 1, durability: 500, sound: ENTITY_ARROW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    pump_shotgun: { ammo: ammo_12gauge, magazine: 8, damage: 1.9, fire-mode: SEMI, fire-delay-ticks: 12, burst-shots: 1, reload-ticks: 48, range: 24, spread: 0.16, recoil: 3.0, pellets: 8, durability: 250, sound: ITEM_CROSSBOW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    riot_shotgun: { ammo: ammo_12gauge, magazine: 6, damage: 1.65, fire-mode: SEMI, fire-delay-ticks: 10, burst-shots: 1, reload-ticks: 44, range: 22, spread: 0.18, recoil: 2.6, pellets: 10, durability: 320, sound: ENTITY_ARROW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    sawed_off: { ammo: ammo_12gauge, magazine: 2, damage: 1.6, fire-mode: SEMI, fire-delay-ticks: 14, burst-shots: 1, reload-ticks: 52, range: 14, spread: 0.28, recoil: 3.5, pellets: 12, durability: 170, sound: ENTITY_ARROW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    bolt_sniper: { ammo: ammo_308, magazine: 5, damage: 27.0, fire-mode: SEMI, fire-delay-ticks: 18, burst-shots: 1, reload-ticks: 55, range: 160, spread: 0.004, recoil: 4.5, pellets: 1, durability: 280, sound: ITEM_CROSSBOW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    marksman_308: { ammo: ammo_308, magazine: 10, damage: 15.0, fire-mode: SEMI, fire-delay-ticks: 9, burst-shots: 1, reload-ticks: 45, range: 126, spread: 0.012, recoil: 2.8, pellets: 1, durability: 380, sound: ENTITY_ARROW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    lmg_556: { ammo: ammo_556, magazine: 75, damage: 4.8, fire-mode: AUTO, fire-delay-ticks: 2, burst-shots: 1, reload-ticks: 65, range: 74, spread: 0.07, recoil: 0.75, pellets: 1, durability: 700, sound: ENTITY_ARROW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    scavenger_carbine: { ammo: ammo_300blk, magazine: 20, damage: 8.0, fire-mode: SEMI, fire-delay-ticks: 6, burst-shots: 1, reload-ticks: 36, range: 64, spread: 0.025, recoil: 1.6, pellets: 1, durability: 330, sound: ITEM_CROSSBOW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    ranger_rifle: { ammo: ammo_762x54, magazine: 10, damage: 16.0, fire-mode: SEMI, fire-delay-ticks: 11, burst-shots: 1, reload-ticks: 48, range: 132, spread: 0.01, recoil: 3.0, pellets: 1, durability: 360, sound: ENTITY_ARROW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    frontier_revolver: { ammo: ammo_357, magazine: 8, damage: 7.2, fire-mode: SEMI, fire-delay-ticks: 7, burst-shots: 1, reload-ticks: 34, range: 40, spread: 0.04, recoil: 1.8, pellets: 1, durability: 210, sound: ITEM_CROSSBOW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    breacher_smg: { ammo: ammo_545, magazine: 32, damage: 4.7, fire-mode: AUTO, fire-delay-ticks: 2, burst-shots: 1, reload-ticks: 40, range: 46, spread: 0.065, recoil: 0.65, pellets: 1, durability: 450, sound: ENTITY_ARROW_SHOOT, reload-sound: BLOCK_LEVER_CLICK }
+    plague_suppressor: { ammo: ammo_300blk, magazine: 30, damage: 5.0, fire-mode: AUTO, fire-delay-ticks: 4, burst-shots: 1, reload-ticks: 42, range: 58, spread: 0.03, recoil: 0.55, pellets: 1, durability: 560, sound: BLOCK_LEVER_CLICK, reload-sound: BLOCK_LEVER_CLICK }
+    heavy_50: { ammo: ammo_50bmg, magazine: 5, damage: 38.0, fire-mode: SEMI, fire-delay-ticks: 24, burst-shots: 1, reload-ticks: 70, range: 192, spread: 0.002, recoil: 5.0, pellets: 1, durability: 300, sound: ENTITY_FIREWORK_ROCKET_BLAST, reload-sound: BLOCK_LEVER_CLICK }
+
+breach:
+  enabled: false # Block breaching intentionally remains disabled in this foundation build.
+  protected-region-policy: deny
+  whitelist: []
+  blacklist: [BEDROCK]
+  restoration-enabled: false
+
+performance:
+  max-noise-events-per-player-per-second: 2
+  persistence-save-delay-ticks: 40
+
+recipes:
+  bandage_bundle:
+    result: bandage
+    amount: 2
+    station: hand
+    ingredients: { cloth: 2 }
+  first_aid_kit:
+    result: first_aid_kit
+    amount: 1
+    station: hand
+    ingredients: { bandage: 2, scrap: 1 }
+  water_filter:
+    result: water_filter
+    amount: 1
+    station: hand
+    ingredients: { cloth: 1, scrap: 1 }
+  small_supply_crate:
+    result: small_supply_crate
+    amount: 1
+    station: hand
+    ingredients: { metal_parts: 2, scrap: 2, components: 1 }
+  metal_locker:
+    result: metal_locker
+    amount: 1
+    station: hand
+    ingredients: { metal_parts: 4, components: 2 }
+  craft_pistol_9mm: { result: pistol_9mm, amount: 1, station: workbench, ingredients: { metal_parts: 3, components: 2, scrap: 2 } }
+  craft_pistol_45: { result: pistol_45, amount: 1, station: workbench, ingredients: { metal_parts: 4, components: 2, scrap: 2 } }
+  craft_revolver_357: { result: revolver_357, amount: 1, station: workbench, ingredients: { metal_parts: 4, components: 2, scrap: 3 } }
+  craft_compact_smg: { result: compact_smg, amount: 1, station: workbench, ingredients: { metal_parts: 5, components: 4, scrap: 4 } }
+  craft_ump45: { result: ump45, amount: 1, station: workbench, ingredients: { metal_parts: 6, components: 4, scrap: 3 } }
+  craft_ak47: { result: ak47, amount: 1, station: workbench, ingredients: { metal_parts: 7, components: 5, scrap: 4 } }
+  craft_m4_carbine: { result: m4_carbine, amount: 1, station: workbench, ingredients: { metal_parts: 7, components: 6, scrap: 3 } }
+  craft_famas_burst: { result: famas_burst, amount: 1, station: workbench, ingredients: { metal_parts: 7, components: 6, scrap: 4 } }
+  craft_pump_shotgun: { result: pump_shotgun, amount: 1, station: workbench, ingredients: { metal_parts: 5, components: 3, scrap: 4 } }
+  craft_riot_shotgun: { result: riot_shotgun, amount: 1, station: workbench, ingredients: { metal_parts: 6, components: 4, scrap: 3 } }
+  craft_sawed_off: { result: sawed_off, amount: 1, station: workbench, ingredients: { metal_parts: 3, components: 2, scrap: 4 } }
+  craft_bolt_sniper: { result: bolt_sniper, amount: 1, station: workbench, ingredients: { metal_parts: 8, components: 7, scrap: 3 } }
+  craft_marksman_308: { result: marksman_308, amount: 1, station: workbench, ingredients: { metal_parts: 8, components: 6, scrap: 4 } }
+  craft_lmg_556: { result: lmg_556, amount: 1, station: workbench, ingredients: { metal_parts: 9, components: 6, scrap: 5 } }
+  craft_scavenger_carbine: { result: scavenger_carbine, amount: 1, station: workbench, ingredients: { metal_parts: 4, components: 3, scrap: 5 } }
+  craft_ranger_rifle: { result: ranger_rifle, amount: 1, station: workbench, ingredients: { metal_parts: 7, components: 5, scrap: 4 } }
+  craft_frontier_revolver: { result: frontier_revolver, amount: 1, station: workbench, ingredients: { metal_parts: 3, components: 2, scrap: 3 } }
+  craft_breacher_smg: { result: breacher_smg, amount: 1, station: workbench, ingredients: { metal_parts: 6, components: 4, scrap: 5 } }
+  craft_plague_suppressor: { result: plague_suppressor, amount: 1, station: workbench, ingredients: { metal_parts: 8, components: 8, scrap: 3 } }
+  craft_heavy_50: { result: heavy_50, amount: 1, station: workbench, ingredients: { metal_parts: 10, components: 8, scrap: 5 } }
+  craft_ammo_9mm: { result: ammo_9mm, amount: 8, station: workbench, ingredients: { scrap: 1, metal_parts: 1 } }
+  craft_ammo_45: { result: ammo_45, amount: 8, station: workbench, ingredients: { scrap: 1, metal_parts: 1 } }
+  craft_ammo_357: { result: ammo_357, amount: 6, station: workbench, ingredients: { scrap: 2, metal_parts: 1 } }
+  craft_ammo_12gauge: { result: ammo_12gauge, amount: 6, station: workbench, ingredients: { scrap: 2, metal_parts: 1 } }
+  craft_ammo_556: { result: ammo_556, amount: 8, station: workbench, ingredients: { scrap: 1, metal_parts: 1 } }
+  craft_ammo_762: { result: ammo_762, amount: 6, station: workbench, ingredients: { scrap: 2, metal_parts: 1 } }
+  craft_ammo_308: { result: ammo_308, amount: 4, station: workbench, ingredients: { scrap: 2, metal_parts: 2 } }
+  craft_ammo_300blk: { result: ammo_300blk, amount: 6, station: workbench, ingredients: { scrap: 2, metal_parts: 1 } }
+  craft_ammo_545: { result: ammo_545, amount: 6, station: workbench, ingredients: { scrap: 2, metal_parts: 1 } }
+  craft_ammo_762x54: { result: ammo_762x54, amount: 4, station: workbench, ingredients: { scrap: 2, metal_parts: 2 } }
+  craft_ammo_50bmg: { result: ammo_50bmg, amount: 2, station: workbench, ingredients: { scrap: 3, metal_parts: 3 } }
+
+radio:
+  enabled: true
+  range-blocks: 0 # 0 broadcasts across the server.
+  team-only: false
+  require-radio: false
+  noise-radius: 24.0
+  alerts:
+    check_in: '&e[Radio] %player%: checking in.'
+    distress: '&c[Emergency] %player% activated a distress beacon.'
+    horde: '&c[Warning] %player% reports a horde.'
+    safehouse: '&a[Radio] %player% reports a safehouse.'
+    supply_drop: '&6[Radio] %player% reports supplies.'
+
+trader:
+  enabled: false
+  offers:
+    bandage: { buy-price: 5.0, sell-price: 1.0, stock: 64, restock-seconds: 3600 }
+    clean_water: { buy-price: 3.0, sell-price: 0.5, stock: 48, restock-seconds: 1800 }
+
+survival:
+  enabled: true
+  update-interval-ticks: 100
+  save-interval-ticks: 1200
+  display:
+    enabled: true
+  food-spoilage:
+    enabled: false
+    seconds: 1209600
+  water-points:
+    enabled: true
+    locations: [] # Format: world,x,y,z,clean|contaminated (block coordinates in an existing world).
+  water-purification:
+    enabled: true
+  thirst:
+    enabled: false
+    max: 100.0
+    starting: 100.0
+    drain-per-minute: 1.5
+    sprint-drain-per-minute: 1.0
+    low-threshold: 25.0
+    effect-threshold: 0.0
+    effect: ''
+    effect-amplifier: 0
+    empty-damage: 0.0
+  stamina:
+    enabled: false
+    max: 100.0
+    starting: 100.0
+    sprint-drain-per-minute: 25.0
+    regeneration-per-minute: 18.0
+    reset-on-death: true
