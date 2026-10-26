@@ -49,7 +49,7 @@
         </dependency>
     </dependencies>
     <build>
-        <finalName>ZApocalypseCore-${project.version}</finalName>
+        <finalName>ZApocalypseCore-1.0.0</finalName>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
