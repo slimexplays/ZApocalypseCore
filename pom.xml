@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>dev.kodari</groupId>
     <artifactId>zombie-apocalypse</artifactId>
-    <version>1.0.0-phase1</version>
+    <version>1.0.0</version>
     <name>ZApocalypseCore</name>
     <description>Configurable zombie survival gameplay.</description>
     <url>https://dsc.gg/slimexdev</url>
