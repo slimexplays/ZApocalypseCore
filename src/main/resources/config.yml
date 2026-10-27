@@ -34,6 +34,13 @@ acid-rain:
   infection-chance-per-exposure: 0.0
   warning: '&cAcid rain is burning your exposed skin!'
 
+devices:
+  enabled: true
+  max-devices: 512
+  power:
+    radius-blocks: 32.0
+    fuel-ticks-per-coal: 1200
+
 ai:
   enabled: true
   update-interval-ticks: 20
@@ -233,6 +240,7 @@ items:
   ammo_545: { material: PRISMARINE_CRYSTALS, name: '&b5.45 Rounds', rarity: UNCOMMON }
   ammo_762x54: { material: BLAZE_POWDER, name: '&c7.62 x 54 Rounds', rarity: RARE }
   ammo_50bmg: { material: FIRE_CHARGE, name: '&4.50 BMG Rounds', rarity: EPIC }
+  breaching_charge: { material: FIRE_CHARGE, name: '&cBreaching Charge', rarity: UNCOMMON }
 
 firearms:
   enabled: true
@@ -262,11 +270,15 @@ firearms:
     heavy_50: { ammo: ammo_50bmg, magazine: 5, damage: 38.0, fire-mode: SEMI, fire-delay-ticks: 24, burst-shots: 1, reload-ticks: 70, range: 192, spread: 0.002, recoil: 5.0, pellets: 1, durability: 300, sound: ENTITY_FIREWORK_ROCKET_BLAST, reload-sound: BLOCK_LEVER_CLICK }
 
 breach:
-  enabled: false # Block breaching intentionally remains disabled in this foundation build.
+  enabled: true
   protected-region-policy: deny
-  whitelist: []
-  blacklist: [BEDROCK]
-  restoration-enabled: false
+  tool-item: breaching_charge
+  damage-required: 4
+  progress-timeout-seconds: 30
+  whitelist: [OAK_PLANKS, SPRUCE_PLANKS, BIRCH_PLANKS, COBBLESTONE, STONE_BRICKS, IRON_BLOCK]
+  blacklist: [BEDROCK, BARRIER, COMMAND_BLOCK]
+  restoration-enabled: true
+  restoration-delay-seconds: 300
 
 performance:
   max-noise-events-per-player-per-second: 2
@@ -348,6 +360,35 @@ trader:
   offers:
     bandage: { buy-price: 5.0, sell-price: 1.0, stock: 64, restock-seconds: 3600 }
     clean_water: { buy-price: 3.0, sell-price: 0.5, stock: 48, restock-seconds: 1800 }
+
+npcs:
+  enabled: true
+  doctor:
+    heal-amount: 4.0
+    cooldown-seconds: 60
+
+quests:
+  enabled: true
+  definitions:
+    supply_run:
+      name: '&eSupply Run'
+      description: 'Eliminate 5 zombies to earn scrap.'
+      objective: zombie-kills
+      target: 5
+      reward-item: scrap
+      reward-amount: 4
+    clear_the_road:
+      name: '&cClear the Road'
+      description: 'Eliminate 15 zombies to earn medical supplies.'
+      objective: zombie-kills
+      target: 15
+      reward-item: bandage
+      reward-amount: 3
+
+teams:
+  enabled: true
+  max-size: 4
+  invite-expiry-seconds: 120
 
 survival:
   enabled: true

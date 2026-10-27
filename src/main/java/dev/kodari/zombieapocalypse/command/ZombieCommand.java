@@ -2,8 +2,11 @@ package dev.kodari.zombieapocalypse.command;
 
 import dev.kodari.zombieapocalypse.ZombieApocalypsePlugin;
 import dev.kodari.zombieapocalypse.config.ConfigManager;
+import dev.kodari.zombieapocalypse.device.PowerCctvService;
 import dev.kodari.zombieapocalypse.infection.InfectionManager;
 import dev.kodari.zombieapocalypse.infection.InfectionStage;
+import dev.kodari.zombieapocalypse.npc.SurvivorNpcService;
+import dev.kodari.zombieapocalypse.quest.QuestService;
 import dev.kodari.zombieapocalypse.regional.RegionalInfectionService;
 import dev.kodari.zombieapocalypse.recipe.RecipeRegistry;
 import dev.kodari.zombieapocalypse.trader.TraderService;
@@ -15,6 +18,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -48,7 +52,7 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
             sendBrandedMessage(sender, "&6ZApocalypseCore &7| &fMade By @slimexplays");
             sendBrandedMessage(sender, "&7SlimeX Development &8| &bhttps://dsc.gg/slimexdev");
-            sendBrandedMessage(sender, "&a/zombie info|about|version|help|status|reload|spawn <variant> [amount]|infection <player> <status|set <stage>|clear>|region <list|status|set|clear>|cure <player>|item <player> <id> [amount]|event status|debug");
+            sendBrandedMessage(sender, "&a/zombie info|about|version|help|status|reload|spawn <variant> [amount]|infection <player> <status|set <stage>|clear>|region <list|status|set|clear>|cure <player>|item <player> <id> [amount]|event status|device|power|cctv|npc|quest|debug");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -81,6 +85,18 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("&eEvent engine: Phase 1 status foundation only; no event is active.");
             return true;
         }
+        if (sub.equals("cctv")) {
+            cctv(sender, args);
+            return true;
+        }
+        if (sub.equals("quest")) {
+            quest(sender, args);
+            return true;
+        }
+        if (sub.equals("power") && args.length == 2 && args[1].equalsIgnoreCase("status")) {
+            powerStatus(sender);
+            return true;
+        }
         if (!sender.hasPermission("zombie.admin")) {
             sender.sendMessage("&cYou do not have permission.");
             return true;
@@ -101,6 +117,9 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
             case "cure" -> cure(sender, args);
             case "infection" -> infection(sender, args);
             case "region" -> region(sender, args);
+            case "device" -> device(sender, args);
+            case "npc" -> npc(sender, args);
+            case "power" -> powerStatus(sender);
             default -> sender.sendMessage("&cUnknown subcommand. Use /zombie help.");
         }
         return true;
@@ -285,6 +304,161 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
                 + String.format(Locale.ROOT, "%.1f", status.level()) + " &7- " + status.type());
     }
 
+    private void device(CommandSender sender, String[] args) {
+        PowerCctvService devices = plugin.powerCctv();
+        if (args.length == 2 && args[1].equalsIgnoreCase("list")) {
+            if (devices.devices().isEmpty()) {
+                sender.sendMessage("&eNo CCTV/power devices are registered.");
+                return;
+            }
+            for (PowerCctvService.Device device : devices.devices()) {
+                String status = device.type().equals("camera")
+                        ? (devices.isPowered(device) ? "&aONLINE" : "&cOFFLINE")
+                        : "&e" + device.fuelTicks() / 20 + "s fuel";
+                sender.sendMessage("&f" + device.id() + " &7(" + device.type() + ", " + device.world() + " "
+                        + device.x() + " " + device.y() + " " + device.z() + ") " + status);
+            }
+            return;
+        }
+        if (args.length == 3 && args[1].equalsIgnoreCase("remove")) {
+            sender.sendMessage(devices.remove(args[2]) ? "&aRemoved device " + args[2] + "." : "&cUnknown device ID.");
+            return;
+        }
+        if (args.length != 4 || !args[1].equalsIgnoreCase("place") || !(sender instanceof Player player)) {
+            sender.sendMessage("&cUsage: /zombie device <list|place <camera|generator> <id>|remove <id>>");
+            return;
+        }
+        String type = args[2].toLowerCase(Locale.ROOT);
+        String id = args[3].toLowerCase(Locale.ROOT);
+        if (!List.of("camera", "generator").contains(type) || !id.matches("[a-z0-9_-]{1,32}")) {
+            sender.sendMessage("&cUse camera or generator and an ID of 1-32 lowercase letters, digits, _ or -.");
+            return;
+        }
+        Block target = player.getTargetBlockExact(8);
+        if (target == null) {
+            sender.sendMessage("&cLook at a block within 8 blocks to place the device.");
+            return;
+        }
+        if (!devices.place(type, id, target.getLocation(), player.getLocation().getYaw(), player.getLocation().getPitch())) {
+            sender.sendMessage("&cCould not place device: ID/location occupied, device limit reached, or devices disabled.");
+            return;
+        }
+        sender.sendMessage("&aPlaced " + type + " &f" + id + " &aat " + target.getX() + ", " + target.getY() + ", " + target.getZ() + ".");
+    }
+
+    private void cctv(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("zombie.cctv")) {
+            sender.sendMessage("&cYou do not have permission to use CCTV.");
+            return;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("&cCCTV commands require an in-game player.");
+            return;
+        }
+        PowerCctvService devices = plugin.powerCctv();
+        if (args.length == 2 && args[1].equalsIgnoreCase("list")) {
+            List<PowerCctvService.Device> cameras = devices.devices().stream()
+                    .filter(device -> device.type().equals("camera")).toList();
+            if (cameras.isEmpty()) {
+                sender.sendMessage("&eNo CCTV cameras are registered.");
+                return;
+            }
+            for (PowerCctvService.Device camera : cameras) {
+                sender.sendMessage("&f" + camera.id() + " &7- " + (devices.isPowered(camera) ? "&aONLINE" : "&cOFFLINE"));
+            }
+            return;
+        }
+        if (args.length == 3 && args[1].equalsIgnoreCase("view")) {
+            devices.view(player, args[2]);
+            return;
+        }
+        if (args.length == 2 && args[1].equalsIgnoreCase("exit")) {
+            if (!devices.stopViewing(player)) {
+                sender.sendMessage("&cYou are not viewing a CCTV camera.");
+            }
+            return;
+        }
+        sender.sendMessage("&cUsage: /zombie cctv <list|view <camera-id>|exit>");
+    }
+
+    private void powerStatus(CommandSender sender) {
+        List<PowerCctvService.Device> devices = plugin.powerCctv().devices();
+        long camerasOnline = devices.stream().filter(device -> device.type().equals("camera")
+                && plugin.powerCctv().isPowered(device)).count();
+        long generatorsFueled = devices.stream().filter(device -> device.type().equals("generator")
+                && device.fuelTicks() > 0).count();
+        sender.sendMessage("&ePower: &f" + generatorsFueled + " fueled generator(s), &f" + camerasOnline + " powered camera(s).");
+        if (sender.hasPermission("zombie.admin")) {
+            sender.sendMessage("&7Refuel a generator by right-clicking it while holding coal or charcoal.");
+        }
+    }
+
+    private void quest(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("zombie.quest")) {
+            sendBrandedMessage(sender, "&cYou do not have permission to use quests.");
+            return;
+        }
+        if (!(sender instanceof Player player)) {
+            sendBrandedMessage(sender, "&cQuest commands require an in-game player.");
+            return;
+        }
+        QuestService quests = plugin.quests();
+        if (args.length == 2 && args[1].equalsIgnoreCase("list")) {
+            quests.show(player);
+        } else if (args.length == 2 && args[1].equalsIgnoreCase("status")) {
+            quests.status(player);
+        } else if (args.length == 3 && args[1].equalsIgnoreCase("accept")) {
+            quests.accept(player, args[2]);
+        } else if (args.length == 3 && args[1].equalsIgnoreCase("claim")) {
+            quests.claim(player, args[2]);
+        } else {
+            sendBrandedMessage(sender, "&cUsage: /zombie quest <list|status|accept <id>|claim <id>>");
+        }
+    }
+
+    private void npc(CommandSender sender, String[] args) {
+        SurvivorNpcService npcs = plugin.survivorNpcs();
+        if (args.length == 2 && args[1].equalsIgnoreCase("list")) {
+            List<SurvivorNpcService.NpcInfo> entries = npcs.npcs();
+            if (entries.isEmpty()) {
+                sendBrandedMessage(sender, "&eNo survivor NPCs are currently loaded.");
+                return;
+            }
+            for (SurvivorNpcService.NpcInfo entry : entries) {
+                sendBrandedMessage(sender, "&f" + entry.id() + " &7(" + entry.role() + ") in " + entry.world()
+                        + " &8- &f" + entry.name());
+            }
+            return;
+        }
+        if (args.length == 3 && args[1].equalsIgnoreCase("remove")) {
+            sendBrandedMessage(sender, npcs.remove(args[2]) ? "&aRemoved NPC " + args[2] + "." : "&cNPC not found in loaded chunks.");
+            return;
+        }
+        if (args.length < 4 || !args[1].equalsIgnoreCase("spawn") || !(sender instanceof Player player)) {
+            sendBrandedMessage(sender, "&cUsage: /zombie npc <list|spawn <role> <id> [name...]|remove <id>>");
+            return;
+        }
+        String role = args[2].toLowerCase(Locale.ROOT);
+        String id = args[3].toLowerCase(Locale.ROOT);
+        if (!npcs.isValidRole(role) || !id.matches("[a-z0-9_-]{1,32}")) {
+            sendBrandedMessage(sender, "&cInvalid role or ID. Roles: trader, questgiver, doctor, engineer, guard, survivor.");
+            return;
+        }
+        Block target = player.getTargetBlockExact(8);
+        if (target == null) {
+            sendBrandedMessage(sender, "&cLook at a block within 8 blocks to place the NPC.");
+            return;
+        }
+        String name = args.length > 4 ? String.join(" ", java.util.Arrays.copyOfRange(args, 4, args.length)) : role + " " + id;
+        org.bukkit.Location spawnLocation = target.getLocation().add(0.5, 1.0, 0.5);
+        spawnLocation.setYaw(player.getLocation().getYaw());
+        if (npcs.spawn(role, id, name, spawnLocation) == null) {
+            sendBrandedMessage(sender, "&cNPCs are disabled or the NPC definition is invalid.");
+            return;
+        }
+        sendBrandedMessage(sender, "&aSpawned &f" + role + " &aNPC &f" + id + "&a. Sneak-right-click it or use /zombie npc remove " + id + ".");
+    }
+
     private void sendBrandedMessage(CommandSender sender, String message) {
         sender.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
     }
@@ -292,7 +466,7 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return filter(List.of("info", "about", "version", "help", "status", "reload", "spawn", "infection", "region", "cure", "item", "event", "debug"), args[0]);
+            return filter(List.of("info", "about", "version", "help", "status", "reload", "spawn", "infection", "region", "cure", "item", "event", "device", "power", "cctv", "npc", "quest", "debug"), args[0]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("spawn")) {
             return filter(java.util.Arrays.stream(ZombieVariant.values()).filter(variant -> variant != ZombieVariant.REVENANT)
@@ -319,6 +493,32 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("region")) {
             return filter(List.of("list", "status", "set", "clear"), args[1]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("device")) {
+            return filter(List.of("list", "place", "remove"), args[1]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("device") && args[1].equalsIgnoreCase("place")) {
+            return filter(List.of("camera", "generator"), args[2]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("cctv")) {
+            return filter(List.of("list", "view", "exit"), args[1]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("cctv") && args[1].equalsIgnoreCase("view")) {
+            return filter(plugin.powerCctv().devices().stream().filter(device -> device.type().equals("camera"))
+                    .map(PowerCctvService.Device::id).toList(), args[2]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("npc")) {
+            return filter(List.of("list", "spawn", "remove"), args[1]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("npc") && args[1].equalsIgnoreCase("spawn")) {
+            return filter(List.of("trader", "questgiver", "doctor", "engineer", "guard", "survivor"), args[2]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("quest")) {
+            return filter(List.of("list", "status", "accept", "claim"), args[1]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("quest")
+                && List.of("accept", "claim").contains(args[1].toLowerCase(Locale.ROOT))) {
+            return filter(plugin.quests().quests().stream().map(QuestService.Quest::id).toList(), args[2]);
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("region")
                 && List.of("status", "set", "clear").contains(args[1].toLowerCase(Locale.ROOT))) {

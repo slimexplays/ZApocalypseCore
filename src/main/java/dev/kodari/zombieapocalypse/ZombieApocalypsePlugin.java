@@ -5,6 +5,7 @@ import dev.kodari.zombieapocalypse.command.RecipeCommand;
 import dev.kodari.zombieapocalypse.communication.RadioService;
 import dev.kodari.zombieapocalypse.condition.SurvivalConditionManager;
 import dev.kodari.zombieapocalypse.config.ConfigManager;
+import dev.kodari.zombieapocalypse.device.PowerCctvService;
 import dev.kodari.zombieapocalypse.environment.AcidRainService;
 import dev.kodari.zombieapocalypse.infection.InfectionManager;
 import dev.kodari.zombieapocalypse.item.CustomItemService;
@@ -14,10 +15,15 @@ import dev.kodari.zombieapocalypse.item.SurvivalItemService;
 import dev.kodari.zombieapocalypse.listener.GameplayListener;
 import dev.kodari.zombieapocalypse.noise.NoiseService;
 import dev.kodari.zombieapocalypse.navigation.WaypointService;
+import dev.kodari.zombieapocalypse.npc.SurvivorNpcService;
 import dev.kodari.zombieapocalypse.protection.ProtectionService;
+import dev.kodari.zombieapocalypse.quest.QuestService;
 import dev.kodari.zombieapocalypse.trader.TraderService;
 import dev.kodari.zombieapocalypse.command.TradeCommand;
 import dev.kodari.zombieapocalypse.command.StorageCommand;
+import dev.kodari.zombieapocalypse.command.TeamCommand;
+import dev.kodari.zombieapocalypse.breach.BreachService;
+import dev.kodari.zombieapocalypse.command.DashboardCommand;
 import dev.kodari.zombieapocalypse.recipe.RecipeRegistry;
 import dev.kodari.zombieapocalypse.regional.RegionalInfectionService;
 import dev.kodari.zombieapocalypse.storage.InfectionStore;
@@ -25,6 +31,7 @@ import dev.kodari.zombieapocalypse.storage.RegionalInfectionStore;
 import dev.kodari.zombieapocalypse.storage.StorageService;
 import dev.kodari.zombieapocalypse.storage.StorageStore;
 import dev.kodari.zombieapocalypse.storage.SurvivalConditionStore;
+import dev.kodari.zombieapocalypse.team.TeamService;
 import dev.kodari.zombieapocalypse.zombie.ZombieService;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -58,6 +65,11 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
     private RegionalInfectionStore regionalInfectionStore;
     private RegionalInfectionService regionalInfectionService;
     private AcidRainService acidRainService;
+    private PowerCctvService powerCctvService;
+    private QuestService questService;
+    private SurvivorNpcService survivorNpcService;
+    private TeamService teamService;
+    private BreachService breachService;
     private volatile boolean debugOverride;
 
     @Override
@@ -79,17 +91,24 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
         survivalConditions = new SurvivalConditionManager(this, configManager, survivalConditionStore);
         zombieService = new ZombieService(this, configManager);
         itemService = new CustomItemService(this, configManager);
+        teamService = new TeamService(this, configManager);
+        breachService = new BreachService(this, configManager, itemService);
         lootSearchService = new LootSearchService(this, configManager, itemService);
         storageStore = new StorageStore(this);
         storageService = new StorageService(this, configManager, itemService, storageStore);
+        storageService.setTeamResolver(teamService);
         noiseService = new NoiseService(configManager, zombieService);
         firearmService = new FirearmService(this, configManager, itemService, noiseService, zombieService);
         radioService = new RadioService(configManager, noiseService, itemService);
+        radioService.setTeamResolver(teamService);
         waypointService = new WaypointService(this);
         protectionService = new ProtectionService(configManager, itemService);
         acidRainService = new AcidRainService(this, configManager, protectionService, infectionManager);
         acidRainService.start();
+        powerCctvService = new PowerCctvService(this, configManager);
         traderService = new TraderService(this, configManager, itemService);
+        questService = new QuestService(this, configManager, itemService);
+        survivorNpcService = new SurvivorNpcService(this, configManager, traderService, questService);
         regionalInfectionStore = new RegionalInfectionStore(this);
         regionalInfectionService = new RegionalInfectionService(this, configManager, regionalInfectionStore);
         survivalItemService = new SurvivalItemService(this, configManager, infectionManager, survivalConditions,
@@ -100,6 +119,10 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
         GameplayListener listener = new GameplayListener(this, configManager, infectionManager, survivalConditions, zombieService,
                 itemService, firearmService, survivalItemService, protectionService, storageService, noiseService, regionalInfectionService);
         Bukkit.getPluginManager().registerEvents(listener, this);
+        Bukkit.getPluginManager().registerEvents(powerCctvService, this);
+        Bukkit.getPluginManager().registerEvents(breachService, this);
+        Bukkit.getPluginManager().registerEvents(questService, this);
+        Bukkit.getPluginManager().registerEvents(survivorNpcService, this);
         Bukkit.getPluginManager().registerEvents(lootSearchService, this);
         Bukkit.getPluginManager().registerEvents(storageService, this);
         zombieService.start();
@@ -122,8 +145,16 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
         getCommand("zstorage").setExecutor(storageCommand);
         getCommand("zstorage").setTabCompleter(storageCommand);
 
+        TeamCommand teamCommand = new TeamCommand(teamService);
+        getCommand("zteam").setExecutor(teamCommand);
+        getCommand("zteam").setTabCompleter(teamCommand);
+
+        DashboardCommand dashboardCommand = new DashboardCommand(this);
+        Bukkit.getPluginManager().registerEvents(dashboardCommand, this);
+        getCommand("zdashboard").setExecutor(dashboardCommand);
+
         if (Bukkit.getPluginManager().getPlugin("WorldGuard") != null) {
-            getLogger().warning("WorldGuard is present, but no protection adapter is bundled; block breaching remains disabled.");
+            getLogger().warning("WorldGuard is present; breaching relies on BlockBreakEvent protection checks, so verify region denials on your server.");
         }
         logStartupSummary();
     }
@@ -177,7 +208,7 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
         getLogger().info("Initialized systems: gameplay listeners, zombie service task, and command handlers.");
         getLogger().info("Data services: infection, survival conditions, regional infection, and storage are loading asynchronously.");
         if (Bukkit.getPluginManager().getPlugin("WorldGuard") != null) {
-            getLogger().info("Optional integrations: WorldGuard detected; unsupported adapter, related protection feature remains disabled.");
+            getLogger().info("Optional integrations: WorldGuard detected; breaching delegates protection checks through BlockBreakEvent.");
         } else {
             getLogger().info("Optional integrations: WorldGuard not detected; no optional integration active.");
         }
@@ -209,6 +240,18 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
         }
         if (acidRainService != null) {
             acidRainService.close();
+        }
+        if (powerCctvService != null) {
+            powerCctvService.close();
+        }
+        if (questService != null) {
+            questService.close();
+        }
+        if (teamService != null) {
+            teamService.close();
+        }
+        if (breachService != null) {
+            breachService.close();
         }
         if (infectionStore != null) {
             infectionStore.close();
@@ -278,6 +321,22 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
 
     public RegionalInfectionService regionalInfection() {
         return regionalInfectionService;
+    }
+
+    public PowerCctvService powerCctv() {
+        return powerCctvService;
+    }
+
+    public QuestService quests() {
+        return questService;
+    }
+
+    public SurvivorNpcService survivorNpcs() {
+        return survivorNpcService;
+    }
+
+    public TeamService teams() {
+        return teamService;
     }
 
     public boolean isDebugEnabled() {

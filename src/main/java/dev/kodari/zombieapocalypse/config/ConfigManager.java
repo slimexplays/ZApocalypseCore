@@ -1,6 +1,7 @@
 package dev.kodari.zombieapocalypse.config;
 
 import dev.kodari.zombieapocalypse.ZombieApocalypsePlugin;
+import com.cryptomorin.xseries.XMaterial;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -80,15 +81,24 @@ public final class ConfigManager {
         valid &= range(config, "acid-rain.event-duration-seconds", 1, 86400);
         valid &= range(config, "acid-rain.exposure-damage", 0, 20);
         valid &= range(config, "acid-rain.infection-chance-per-exposure", 0, 1);
+        valid &= range(config, "devices.max-devices", 1, 4096);
+        valid &= range(config, "devices.power.radius-blocks", 1, 512);
+        valid &= range(config, "devices.power.fuel-ticks-per-coal", 20, 72000);
+        valid &= range(config, "npcs.doctor.heal-amount", 0, 20);
+        valid &= range(config, "npcs.doctor.cooldown-seconds", 1, 3600);
+        valid &= range(config, "teams.max-size", 2, 16);
+        valid &= range(config, "teams.invite-expiry-seconds", 10, 3600);
         valid &= lessOrEqual(config, "survival.thirst.starting", "survival.thirst.max");
         valid &= lessOrEqual(config, "survival.thirst.low-threshold", "survival.thirst.max");
         valid &= lessOrEqual(config, "survival.thirst.effect-threshold", "survival.thirst.max");
         valid &= lessOrEqual(config, "survival.stamina.starting", "survival.stamina.max");
         valid &= validateItems(config);
+        valid &= validateBreach(config);
         valid &= validateFirearms(config);
         valid &= validateLootSearch(config);
         valid &= validateWaterPoints(config);
         valid &= validateRegionalInfection(config);
+        valid &= validateQuests(config);
         for (String variant : List.of("normal", "runner", "brute", "crawler", "screamer", "armored", "toxic", "demolisher", "alpha", "boss", "stealth", "mutated", "revenant")) {
             String prefix = "variants." + variant + ".";
             valid &= range(config, prefix + "health", 1, 2048);
@@ -97,6 +107,75 @@ public final class ConfigManager {
             valid &= range(config, prefix + "resistance", 0, 1);
             valid &= range(config, prefix + "spawn-chance", 0, 1);
             valid &= range(config, prefix + "drop-chance", 0, 1);
+        }
+        return valid;
+    }
+
+    private boolean validateBreach(YamlConfiguration config) {
+        if (!config.getBoolean("breach.enabled", false)) {
+            return true;
+        }
+        boolean valid = true;
+        valid &= range(config, "breach.damage-required", 1, 32);
+        valid &= range(config, "breach.progress-timeout-seconds", 1, 600);
+        if (config.getBoolean("breach.restoration-enabled", false)) {
+            valid &= range(config, "breach.restoration-delay-seconds", 1, 31536000);
+        }
+        String toolItem = config.getString("breach.tool-item", "breaching_charge");
+        if (config.getConfigurationSection("items." + toolItem) == null) {
+            plugin.getLogger().severe("Breaching requires a configured custom item at 'items." + toolItem + "'.");
+            valid = false;
+        }
+        if (!"deny".equalsIgnoreCase(config.getString("breach.protected-region-policy", "deny"))) {
+            plugin.getLogger().severe("breach.protected-region-policy must be 'deny'.");
+            valid = false;
+        }
+        if (config.getStringList("breach.whitelist").isEmpty()) {
+            plugin.getLogger().severe("Enabled breaching requires a non-empty breach.whitelist.");
+            valid = false;
+        }
+        for (String material : config.getStringList("breach.whitelist")) {
+            if (XMaterial.matchXMaterial(material).isEmpty()) {
+                plugin.getLogger().severe("Unknown material in breach.whitelist: " + material);
+                valid = false;
+            }
+        }
+        for (String material : config.getStringList("breach.blacklist")) {
+            if (XMaterial.matchXMaterial(material).isEmpty()) {
+                plugin.getLogger().severe("Unknown material in breach.blacklist: " + material);
+                valid = false;
+            }
+        }
+        return valid;
+    }
+
+    private boolean validateQuests(YamlConfiguration config) {
+        if (!config.getBoolean("quests.enabled", true)) {
+            return true;
+        }
+        ConfigurationSection definitions = config.getConfigurationSection("quests.definitions");
+        if (definitions == null || definitions.getKeys(false).isEmpty() || definitions.getKeys(false).size() > 128) {
+            plugin.getLogger().severe("Enabled quests require 1-128 definitions.");
+            return false;
+        }
+        boolean valid = true;
+        for (String id : definitions.getKeys(false)) {
+            ConfigurationSection quest = definitions.getConfigurationSection(id);
+            String prefix = "quests.definitions." + id + ".";
+            if (!id.matches("[a-z0-9_-]{1,32}") || quest == null
+                    || !"zombie-kills".equalsIgnoreCase(config.getString(prefix + "objective", ""))
+                    || config.getString(prefix + "name", "").isBlank()
+                    || config.getString(prefix + "description", "").isBlank()) {
+                plugin.getLogger().severe("Invalid quest '" + id + "': use a valid ID, name, description, and zombie-kills objective.");
+                valid = false;
+                continue;
+            }
+            valid &= range(config, prefix + "target", 1, 100000);
+            valid &= range(config, prefix + "reward-amount", 1, 64);
+            if (config.getConfigurationSection("items." + config.getString(prefix + "reward-item", "")) == null) {
+                plugin.getLogger().severe("Quest '" + id + "' references an unknown reward item.");
+                valid = false;
+            }
         }
         return valid;
     }

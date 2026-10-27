@@ -8,7 +8,7 @@ website: https://dsc.gg/slimexdev
 commands:
   zombie:
     description: Zombie Apocalypse administration and status commands.
-    usage: /zombie help
+    usage: /zombie help|device|power|cctv
     aliases: [za]
   zrecipe:
     description: Browse and craft registered survival recipes.
@@ -22,6 +22,14 @@ commands:
     description: Configure access to a held custom storage item.
     usage: /zstorage info|mode <private|team|public>
     permission: zombie.use
+  zteam:
+    description: Create and manage survivor teams.
+    usage: /zteam create|invite|accept|leave|info|kick|disband
+    permission: zombie.use
+  zdashboard:
+    description: Open the in-game survivor status dashboard.
+    usage: /zdashboard
+    permission: zombie.use
 permissions:
   zombie.use:
     description: Use public Zombie Apocalypse commands.
@@ -29,3 +37,9 @@ permissions:
   zombie.admin:
     description: Administer Zombie Apocalypse features.
     default: op
+  zombie.cctv:
+    description: View and list powered CCTV cameras.
+    default: true
+  zombie.quest:
+    description: View, accept and complete survivor quests.
+    default: true
