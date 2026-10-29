@@ -78,10 +78,3 @@ Regional infection is limited to configured cuboids, bounded spread/decay, persi
 This increment does not implement temperature, wetness, fatigue/sleep quality, wounds, illness, contamination-location simulation, complete treatment stations, filters that wear out, storage keys/locks, physical placed containers, persisted trader stock, NPC traders, Vault integration, safehouse/team-shared waypoints or upkeep/upgrades, discovered-location maps, vanilla crafting-table/furnace/multistage recipes, recipe unlocks, custom firearm sounds, client-side dynamic lights, security devices, CCTV, alarms, sensors, power/generator systems, environmental crop/device effects, rescue events, horde warnings/danger indicators, block breach/restoration, a WorldGuard adapter, or the remainder of the requested advanced AI/boss systems. Acid Rain is a bounded vanilla-storm hazard only; it is not part of a World Director event system. Handheld lighting is not simulated; use ordinary placeable vanilla light items. Team access requires an integration through the exposed provider interfaces. The separate master blueprint file is missing; compile output and live gameplay/resource-pack testing have not been verified. Firearms use the custom pack visuals; loot search uses vanilla visuals.
 
 The phase handoffs describe earlier partial increments; this README and `TEST_REPORT.md` contain the current target and implementation status. Phase 3 extension points are summarized in `PHASE_3_HANDOFF.md`.
-
-
-
-
-## Plugin And Resource Pack
-
-https://github.com/slimexplays/ZApocalypseCore/releases/tag/ZApocalypseCore

@@ -1,5 +1,5 @@
 name: ZApocalypseCore
-version: '1.0.0'
+version: '${project.version}'
 main: dev.kodari.zombieapocalypse.ZombieApocalypsePlugin
 api-version: '26.3'
 description: Configurable zombie survival, firearm, and infection gameplay by SlimeX Development.
