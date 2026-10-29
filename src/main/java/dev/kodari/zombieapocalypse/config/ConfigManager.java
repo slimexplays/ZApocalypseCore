@@ -53,6 +53,9 @@ public final class ConfigManager {
         valid &= range(config, "ai.detection-radius", 1, 128);
         valid &= range(config, "ai.alert-radius", 1, 128);
         valid &= range(config, "ai.noise-investigation-radius", 1, 128);
+        valid &= range(config, "ai.target-memory-seconds", 1, 600);
+        valid &= range(config, "ai.search-seconds", 1, 600);
+        valid &= range(config, "ai.search-radius-blocks", 1, 32);
         valid &= range(config, "ai.tracked-zombies-per-update", 1, 512);
         valid &= range(config, "infection.bite-probability", 0, 1);
         valid &= range(config, "infection.infected-after-seconds", 1, 31536000);
@@ -77,13 +80,57 @@ public final class ConfigManager {
         valid &= range(config, "survival.food-spoilage.seconds", 60, 31536000);
         valid &= range(config, "radio.range-blocks", 0, 100000);
         valid &= range(config, "radio.noise-radius", 0, 128);
+        valid &= range(config, "phone.battery.max", 1, 10000);
+        valid &= range(config, "phone.battery.drain-per-minute", 0, 10000);
+        valid &= range(config, "phone.battery.message-cost", 0, 10000);
+        valid &= range(config, "phone.battery.sos-cost", 0, 10000);
+        valid &= range(config, "phone.battery.recharge-amount", 1, 10000);
+        valid &= range(config, "phone.history-limit", 1, 1000);
+        valid &= range(config, "phone.max-message-length", 1, 512);
         valid &= range(config, "acid-rain.damage-interval-seconds", 1, 120);
         valid &= range(config, "acid-rain.event-duration-seconds", 1, 86400);
         valid &= range(config, "acid-rain.exposure-damage", 0, 20);
         valid &= range(config, "acid-rain.infection-chance-per-exposure", 0, 1);
+        valid &= range(config, "toxic-fog.damage-interval-seconds", 1, 120);
+        valid &= range(config, "toxic-fog.exposure-damage", 0, 20);
+        valid &= range(config, "toxic-fog.infection-chance-per-exposure", 0, 1);
+        valid &= range(config, "toxic-fog.effect-duration-ticks", 1, 72000);
+        valid &= range(config, "toxic-fog.effect-amplifier", 0, 10);
         valid &= range(config, "devices.max-devices", 1, 4096);
         valid &= range(config, "devices.power.radius-blocks", 1, 512);
         valid &= range(config, "devices.power.fuel-ticks-per-coal", 20, 72000);
+        valid &= range(config, "devices.power.fuel-ticks-per-second", 1, 72000);
+        valid &= range(config, "devices.power.generator-output-units", 1, 128);
+        valid &= range(config, "devices.power.battery-output-units", 1, 128);
+        valid &= range(config, "devices.power.battery-capacity-seconds", 60, 604800);
+        valid &= range(config, "devices.power.battery-charge-ticks-per-second", 1, 72000);
+        valid &= range(config, "devices.power.battery-charge-load", 1, 128);
+        valid &= range(config, "devices.power.charger-radius-blocks", 1, 64);
+        valid &= range(config, "devices.power.phone-charge-percent-per-second", 1, 100);
+        valid &= range(config, "devices.power.consumer-loads.camera", 1, 128);
+        valid &= range(config, "devices.power.consumer-loads.charger", 1, 128);
+        valid &= range(config, "devices.power.consumer-loads.monitor", 1, 128);
+        valid &= range(config, "devices.power.consumer-loads.terminal", 1, 128);
+        valid &= range(config, "devices.power.consumer-loads.laptop", 1, 128);
+        valid &= range(config, "devices.power.consumer-loads.secure_door", 1, 128);
+        valid &= range(config, "devices.cctv.motion-radius-blocks", 1, 128);
+        valid &= range(config, "security.max-doors", 1, 4096);
+        valid &= range(config, "security.open-seconds", 1, 60);
+        if (config.getBoolean("security.enabled", true) && config.getConfigurationSection("items.keycard") == null) {
+            plugin.getLogger().severe("Secure doors require a configured custom item at 'items.keycard'.");
+            valid = false;
+        }
+        valid &= range(config, "events.auto-start-interval-seconds", 60, 604800);
+        valid &= range(config, "events.pulse-interval-seconds", 10, 3600);
+        valid &= range(config, "events.wave-size", 1, 32);
+        valid &= range(config, "events.military-evacuation.extraction-radius-blocks", 1, 128);
+        valid &= range(config, "events.military-evacuation.reward-amount", 1, 64);
+        valid &= range(config, "events.boss-hunt.reward-amount", 1, 64);
+        for (String event : List.of("blood-moon", "blackout", "supply-drop", "horde-migration", "safehouse-siege",
+                "infection-surge", "silent-night", "military-evacuation", "distress-call", "lab-breach", "lockdown", "boss-hunt")) {
+            valid &= range(config, "events.definitions." + event + ".duration-seconds", 30, 86400);
+            valid &= range(config, "events.definitions." + event + ".cooldown-seconds", 0, 604800);
+        }
         valid &= range(config, "npcs.doctor.heal-amount", 0, 20);
         valid &= range(config, "npcs.doctor.cooldown-seconds", 1, 3600);
         valid &= range(config, "teams.max-size", 2, 16);
@@ -153,12 +200,25 @@ public final class ConfigManager {
         if (!config.getBoolean("quests.enabled", true)) {
             return true;
         }
+        ConfigurationSection factions = config.getConfigurationSection("factions.definitions");
+        if (factions == null || factions.getKeys(false).isEmpty() || factions.getKeys(false).size() > 64) {
+            plugin.getLogger().severe("Enabled quests require 1-64 faction definitions.");
+            return false;
+        }
+        boolean valid = true;
+        for (String factionId : factions.getKeys(false)) {
+            ConfigurationSection faction = factions.getConfigurationSection(factionId);
+            if (!factionId.matches("[a-z0-9_-]{1,32}") || faction == null
+                    || config.getString("factions.definitions." + factionId + ".name", "").isBlank()) {
+                plugin.getLogger().severe("Invalid faction definition: " + factionId);
+                valid = false;
+            }
+        }
         ConfigurationSection definitions = config.getConfigurationSection("quests.definitions");
         if (definitions == null || definitions.getKeys(false).isEmpty() || definitions.getKeys(false).size() > 128) {
             plugin.getLogger().severe("Enabled quests require 1-128 definitions.");
             return false;
         }
-        boolean valid = true;
         for (String id : definitions.getKeys(false)) {
             ConfigurationSection quest = definitions.getConfigurationSection(id);
             String prefix = "quests.definitions." + id + ".";
@@ -172,6 +232,12 @@ public final class ConfigManager {
             }
             valid &= range(config, prefix + "target", 1, 100000);
             valid &= range(config, prefix + "reward-amount", 1, 64);
+            valid &= range(config, prefix + "reputation-reward", 0, 100000);
+            String factionId = config.getString(prefix + "faction", "survivors");
+            if (!factions.contains(factionId)) {
+                plugin.getLogger().severe("Quest '" + id + "' references an unknown faction: " + factionId);
+                valid = false;
+            }
             if (config.getConfigurationSection("items." + config.getString(prefix + "reward-item", "")) == null) {
                 plugin.getLogger().severe("Quest '" + id + "' references an unknown reward item.");
                 valid = false;

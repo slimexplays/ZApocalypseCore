@@ -17,7 +17,9 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -26,6 +28,7 @@ public final class ZombieService {
     private final ConfigManager config;
     private final NamespacedKey variantKey;
     private final List<UUID> tracked = new ArrayList<>();
+    private final Map<UUID, TargetMemory> targetMemories = new HashMap<>();
     private BukkitTask task;
     private BukkitTask spawnTask;
     private BukkitTask hordeTask;
@@ -205,11 +208,13 @@ public final class ZombieService {
     public void onChunkUnload(org.bukkit.Chunk chunk) {
         for (Entity entity : chunk.getEntities()) {
             tracked.remove(entity.getUniqueId());
+            targetMemories.remove(entity.getUniqueId());
         }
     }
 
     public void onEntityDeath(Entity entity) {
         tracked.remove(entity.getUniqueId());
+        targetMemories.remove(entity.getUniqueId());
     }
 
     public void onTarget(EntityTargetLivingEntityEvent event) {
@@ -228,6 +233,7 @@ public final class ZombieService {
             if (entity instanceof Zombie zombie && getVariant(zombie) != null && zombie.getTarget() == null
                     && zombie.hasLineOfSight(player)) {
                 zombie.setTarget(player);
+                rememberTarget(zombie, player);
             }
         }
     }
@@ -238,6 +244,7 @@ public final class ZombieService {
             if (entity instanceof Zombie nearby && nearby != source && getVariant(nearby) != null
                     && nearby.getTarget() == null && nearby.hasLineOfSight(target)) {
                 nearby.setTarget(target);
+                rememberTarget(nearby, target);
             }
         }
     }
@@ -257,12 +264,68 @@ public final class ZombieService {
                 tracked.remove(cursor);
                 continue;
             }
-            LivingEntity target = zombie.getTarget();
-            if (target != null && (!target.isValid() || !target.getWorld().equals(zombie.getWorld()))) {
-                zombie.setTarget(null);
-            }
+            updateTargetMemory(zombie);
             cursor++;
         }
+    }
+
+    private void rememberTarget(Zombie zombie, Player target) {
+        targetMemories.put(zombie.getUniqueId(), new TargetMemory(target.getUniqueId(), target.getLocation().clone(),
+                System.currentTimeMillis(), 0L));
+    }
+
+    private void updateTargetMemory(Zombie zombie) {
+        UUID zombieId = zombie.getUniqueId();
+        LivingEntity target = zombie.getTarget();
+        long now = System.currentTimeMillis();
+        if (target instanceof Player player) {
+            if (!player.isValid() || player.isDead() || !player.getWorld().equals(zombie.getWorld())) {
+                zombie.setTarget(null);
+                return;
+            }
+            TargetMemory memory = targetMemories.get(zombieId);
+            if (zombie.hasLineOfSight(player) || memory == null || !memory.targetId().equals(player.getUniqueId())) {
+                targetMemories.put(zombieId, new TargetMemory(player.getUniqueId(), player.getLocation().clone(), now, 0L));
+                return;
+            }
+            long memoryMillis = config.getLong("ai.target-memory-seconds", 20) * 1000L;
+            if (now - memory.lastSeenAt() > memoryMillis) {
+                zombie.setTarget(null);
+                targetMemories.put(zombieId, memory.withLastSearchAt(now));
+            }
+            return;
+        }
+        if (target != null) {
+            targetMemories.remove(zombieId);
+            return;
+        }
+        TargetMemory memory = targetMemories.get(zombieId);
+        if (memory == null || !memory.lastLocation().getWorld().equals(zombie.getWorld())) {
+            targetMemories.remove(zombieId);
+            return;
+        }
+        long elapsed = now - memory.lastSeenAt();
+        long memoryMillis = config.getLong("ai.target-memory-seconds", 20) * 1000L;
+        long searchMillis = config.getLong("ai.search-seconds", 12) * 1000L;
+        if (elapsed > memoryMillis + searchMillis) {
+            targetMemories.remove(zombieId);
+            return;
+        }
+        if (elapsed < memoryMillis || now - memory.lastSearchAt() < 1000L) {
+            return;
+        }
+        double radius = config.getDouble("ai.search-radius-blocks", 8.0);
+        if (zombie.getLocation().distanceSquared(memory.lastLocation()) <= radius * radius) {
+            for (Entity nearby : zombie.getNearbyEntities(radius, radius, radius)) {
+                if (nearby instanceof Player player && !player.isDead() && zombie.hasLineOfSight(player)
+                        && player.getLocation().distanceSquared(memory.lastLocation()) <= radius * radius) {
+                    zombie.setTarget(player);
+                    rememberTarget(zombie, player);
+                    return;
+                }
+            }
+        }
+        targetMemories.put(zombieId, memory.withLastSearchAt(now));
     }
 
     public Zombie spawnRevenant(Location location) {
@@ -290,6 +353,13 @@ public final class ZombieService {
         }
         if (hordeTask != null) {
             hordeTask.cancel();
+        }
+        targetMemories.clear();
+    }
+
+    private record TargetMemory(UUID targetId, Location lastLocation, long lastSeenAt, long lastSearchAt) {
+        private TargetMemory withLastSearchAt(long time) {
+            return new TargetMemory(targetId, lastLocation, lastSeenAt, time);
         }
     }
 }

@@ -13,10 +13,15 @@ public final class NoiseService {
     private final ConfigManager config;
     private final ZombieService zombies;
     private final Map<UUID, Long> lastNoise = new HashMap<>();
+    private boolean attractionSuppressed;
 
     public NoiseService(ConfigManager config, ZombieService zombies) {
         this.config = config;
         this.zombies = zombies;
+    }
+
+    public void setAttractionSuppressed(boolean suppressed) {
+        attractionSuppressed = suppressed;
     }
 
     public void movement(Player player) {
@@ -40,13 +45,13 @@ public final class NoiseService {
     }
 
     public void emit(Player source, double radius) {
-        if (radius > 0 && source.isOnline()) {
+        if (!attractionSuppressed && radius > 0 && source.isOnline()) {
             zombies.investigate(source, radius);
         }
     }
 
     public void emit(Location location, double radius) {
-        if (location.getWorld() == null || radius <= 0) {
+        if (attractionSuppressed || location.getWorld() == null || radius <= 0) {
             return;
         }
         for (Player player : location.getWorld().getPlayers()) {

@@ -52,7 +52,7 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
             sendBrandedMessage(sender, "&6ZApocalypseCore &7| &fMade By @slimexplays");
             sendBrandedMessage(sender, "&7SlimeX Development &8| &bhttps://dsc.gg/slimexdev");
-            sendBrandedMessage(sender, "&a/zombie info|about|version|help|status|reload|spawn <variant> [amount]|infection <player> <status|set <stage>|clear>|region <list|status|set|clear>|cure <player>|item <player> <id> [amount]|event status|device|power|cctv|npc|quest|debug");
+            sendBrandedMessage(sender, "&a/zombie info|about|version|help|status|reload|spawn <variant> [amount]|infection <player> <status|set <stage>|clear>|region <list|status|set|clear>|cure <player>|item <player> <id> [amount]|event <status|list|start <id>|stop>|device|power|cctv|npc|quest|debug");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -62,7 +62,7 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
             sendBrandedMessage(sender, "&7A feature-rich zombie survival experience.");
             sendBrandedMessage(sender, "&fCreator: &e slimexplays &8| &fOrganization: &eSlimeX Development");
             sendBrandedMessage(sender, "&fSupport: &bhttps://dsc.gg/slimexdev");
-            sendBrandedMessage(sender, "&7Commands: &f/zombie about &8| &f/zombie version &8| &f/zombie help");
+            sendBrandedMessage(sender, "&7Commands: &f/zombie event status|list|start|stop &8| &f/zombie about &8| &f/zombie version");
             sendBrandedMessage(sender, "&8&m----------------------------------------");
             return true;
         }
@@ -81,8 +81,8 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
                     + " &7| tracked custom zombies: " + zombies.trackedCount());
             return true;
         }
-        if (sub.equals("event") && args.length == 2 && args[1].equalsIgnoreCase("status")) {
-            sender.sendMessage("&eEvent engine: Phase 1 status foundation only; no event is active.");
+        if (sub.equals("event")) {
+            event(sender, args);
             return true;
         }
         if (sub.equals("cctv")) {
@@ -123,6 +123,31 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
             default -> sender.sendMessage("&cUnknown subcommand. Use /zombie help.");
         }
         return true;
+    }
+
+    private void event(CommandSender sender, String[] args) {
+        if (args.length == 2 && args[1].equalsIgnoreCase("status")) {
+            sendBrandedMessage(sender, plugin.events().status());
+            return;
+        }
+        if (args.length == 2 && args[1].equalsIgnoreCase("list")) {
+            sendBrandedMessage(sender, "&eAvailable events: &f" + String.join(", ", plugin.events().eventIds()));
+            return;
+        }
+        if (!sender.hasPermission("zombie.admin")) {
+            sendBrandedMessage(sender, "&cYou do not have permission to start or stop events.");
+            return;
+        }
+        if (args.length == 3 && args[1].equalsIgnoreCase("start")) {
+            boolean started = plugin.events().startEvent(args[2]);
+            sendBrandedMessage(sender, started ? "&aEvent started." : "&cEvent could not start: active event, cooldown, disabled setting, or missing target.");
+            return;
+        }
+        if (args.length == 2 && args[1].equalsIgnoreCase("stop")) {
+            sendBrandedMessage(sender, plugin.events().stopEvent() ? "&eEvent stopped." : "&cNo event is active.");
+            return;
+        }
+        sendBrandedMessage(sender, "&cUsage: /zombie event <status|list|start <id>|stop>");
     }
 
     private void spawn(CommandSender sender, String[] args) {
@@ -312,9 +337,14 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
                 return;
             }
             for (PowerCctvService.Device device : devices.devices()) {
-                String status = device.type().equals("camera")
-                        ? (devices.isPowered(device) ? "&aONLINE" : "&cOFFLINE")
-                        : "&e" + device.fuelTicks() / 20 + "s fuel";
+                String status = switch (device.type()) {
+                    case "camera", "charger" -> devices.isPowered(device) ? "&aONLINE" : "&cOFFLINE";
+                    case "generator" -> "&e" + device.fuelTicks() / 20 + "s fuel";
+                    case "battery" -> "&b" + device.fuelTicks() / 20 + "s stored";
+                    case "breaker" -> devices.isBreakerEnabled(device) ? "&aCLOSED" : "&cOPEN";
+                    case "secure_door" -> devices.isPowered(device) ? "&aPOWERED LOCK" : "&cFAIL-CLOSED";
+                    default -> "&7CONNECTED";
+                };
                 sender.sendMessage("&f" + device.id() + " &7(" + device.type() + ", " + device.world() + " "
                         + device.x() + " " + device.y() + " " + device.z() + ") " + status);
             }
@@ -325,13 +355,14 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
             return;
         }
         if (args.length != 4 || !args[1].equalsIgnoreCase("place") || !(sender instanceof Player player)) {
-            sender.sendMessage("&cUsage: /zombie device <list|place <camera|generator> <id>|remove <id>>");
+            sender.sendMessage("&cUsage: /zombie device <list|place <camera|generator|battery|cable|connector|breaker|charger|monitor|terminal|laptop|secure_door> <id>|remove <id>>");
             return;
         }
         String type = args[2].toLowerCase(Locale.ROOT);
         String id = args[3].toLowerCase(Locale.ROOT);
-        if (!List.of("camera", "generator").contains(type) || !id.matches("[a-z0-9_-]{1,32}")) {
-            sender.sendMessage("&cUse camera or generator and an ID of 1-32 lowercase letters, digits, _ or -.");
+        if (!List.of("camera", "generator", "battery", "cable", "connector", "breaker", "charger", "monitor", "terminal", "laptop", "secure_door").contains(type)
+                || !id.matches("[a-z0-9_-]{1,32}")) {
+            sender.sendMessage("&cUse a valid device type and an ID of 1-32 lowercase letters, digits, _ or -.");
             return;
         }
         Block target = player.getTargetBlockExact(8);
@@ -372,13 +403,27 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
             devices.view(player, args[2]);
             return;
         }
+        if (args.length == 3 && args[1].equalsIgnoreCase("log")) {
+            List<String> records = devices.motionLog(args[2]);
+            if (devices.find(args[2]) == null || !devices.find(args[2]).type().equals("camera")) {
+                sender.sendMessage("&cUnknown CCTV camera.");
+                return;
+            }
+            sender.sendMessage("&8--- &eMotion log: " + args[2] + " &8---");
+            if (records.isEmpty()) {
+                sender.sendMessage("&7No motion has been recorded.");
+            } else {
+                records.forEach(record -> sender.sendMessage("&7" + record));
+            }
+            return;
+        }
         if (args.length == 2 && args[1].equalsIgnoreCase("exit")) {
             if (!devices.stopViewing(player)) {
                 sender.sendMessage("&cYou are not viewing a CCTV camera.");
             }
             return;
         }
-        sender.sendMessage("&cUsage: /zombie cctv <list|view <camera-id>|exit>");
+        sender.sendMessage("&cUsage: /zombie cctv <list|view <camera-id>|log <camera-id>|exit>");
     }
 
     private void powerStatus(CommandSender sender) {
@@ -387,7 +432,12 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
                 && plugin.powerCctv().isPowered(device)).count();
         long generatorsFueled = devices.stream().filter(device -> device.type().equals("generator")
                 && device.fuelTicks() > 0).count();
-        sender.sendMessage("&ePower: &f" + generatorsFueled + " fueled generator(s), &f" + camerasOnline + " powered camera(s).");
+        long chargersOnline = devices.stream().filter(device -> device.type().equals("charger")
+                && plugin.powerCctv().isPowered(device)).count();
+        long batteriesCharged = devices.stream().filter(device -> device.type().equals("battery")
+                && device.fuelTicks() > 0).count();
+        sender.sendMessage("&ePower: &f" + generatorsFueled + " fueled generator(s), &f" + camerasOnline
+                + " powered camera(s), &f" + chargersOnline + " charger(s), &f" + batteriesCharged + " charged battery(s).");
         if (sender.hasPermission("zombie.admin")) {
             sender.sendMessage("&7Refuel a generator by right-clicking it while holding coal or charcoal.");
         }
@@ -407,12 +457,14 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
             quests.show(player);
         } else if (args.length == 2 && args[1].equalsIgnoreCase("status")) {
             quests.status(player);
+        } else if (args.length == 2 && args[1].equalsIgnoreCase("reputation")) {
+            quests.showReputation(player);
         } else if (args.length == 3 && args[1].equalsIgnoreCase("accept")) {
             quests.accept(player, args[2]);
         } else if (args.length == 3 && args[1].equalsIgnoreCase("claim")) {
             quests.claim(player, args[2]);
         } else {
-            sendBrandedMessage(sender, "&cUsage: /zombie quest <list|status|accept <id>|claim <id>>");
+            sendBrandedMessage(sender, "&cUsage: /zombie quest <list|status|reputation|accept <id>|claim <id>>");
         }
     }
 
@@ -489,7 +541,10 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
             return filter(List.of("healthy", "infected", "critical"), args[3]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("event")) {
-            return filter(List.of("status"), args[1]);
+            return filter(List.of("status", "list", "start", "stop"), args[1]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("event") && args[1].equalsIgnoreCase("start")) {
+            return filter(plugin.events().eventIds(), args[2]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("region")) {
             return filter(List.of("list", "status", "set", "clear"), args[1]);
@@ -498,10 +553,11 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
             return filter(List.of("list", "place", "remove"), args[1]);
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("device") && args[1].equalsIgnoreCase("place")) {
-            return filter(List.of("camera", "generator"), args[2]);
+            return filter(List.of("camera", "generator", "battery", "cable", "connector", "breaker", "charger",
+                    "monitor", "terminal", "laptop"), args[2]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("cctv")) {
-            return filter(List.of("list", "view", "exit"), args[1]);
+            return filter(List.of("list", "view", "log", "exit"), args[1]);
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("cctv") && args[1].equalsIgnoreCase("view")) {
             return filter(plugin.powerCctv().devices().stream().filter(device -> device.type().equals("camera"))
@@ -514,7 +570,7 @@ public final class ZombieCommand implements CommandExecutor, TabCompleter {
             return filter(List.of("trader", "questgiver", "doctor", "engineer", "guard", "survivor"), args[2]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("quest")) {
-            return filter(List.of("list", "status", "accept", "claim"), args[1]);
+            return filter(List.of("list", "status", "reputation", "accept", "claim"), args[1]);
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("quest")
                 && List.of("accept", "claim").contains(args[1].toLowerCase(Locale.ROOT))) {

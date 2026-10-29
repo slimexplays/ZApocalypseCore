@@ -34,12 +34,68 @@ acid-rain:
   infection-chance-per-exposure: 0.0
   warning: '&cAcid rain is burning your exposed skin!'
 
+toxic-fog:
+  enabled: false
+  region-types: [contaminated, high-risk]
+  damage-interval-seconds: 5
+  exposure-damage: 0.5
+  infection-chance-per-exposure: 0.02
+  effect: POISON
+  effect-duration-ticks: 100
+  effect-amplifier: 0
+  warning: '&2Toxic fog is burning your lungs!'
+
 devices:
   enabled: true
   max-devices: 512
   power:
     radius-blocks: 32.0
     fuel-ticks-per-coal: 1200
+    fuel-ticks-per-second: 20
+    generator-output-units: 4
+    battery-output-units: 2
+    battery-capacity-seconds: 3600
+    battery-charge-ticks-per-second: 20
+    battery-charge-load: 1
+    charger-radius-blocks: 6
+    phone-charge-percent-per-second: 1
+    consumer-loads: { camera: 1, charger: 1, monitor: 1, terminal: 1, laptop: 1, secure_door: 1 }
+  cctv:
+    motion-radius-blocks: 16.0
+
+security:
+  enabled: true
+  max-doors: 256
+  open-seconds: 5
+
+events:
+  enabled: true
+  auto-start: false
+  auto-start-interval-seconds: 3600
+  pulse-interval-seconds: 60
+  wave-size: 3
+  definitions:
+    blood-moon: { enabled: true, duration-seconds: 300, cooldown-seconds: 1800 }
+    blackout: { enabled: true, duration-seconds: 180, cooldown-seconds: 1200 }
+    supply-drop: { enabled: true, duration-seconds: 60, cooldown-seconds: 1200 }
+    horde-migration: { enabled: true, duration-seconds: 300, cooldown-seconds: 1800 }
+    safehouse-siege: { enabled: true, duration-seconds: 300, cooldown-seconds: 1800 }
+    infection-surge: { enabled: true, duration-seconds: 300, cooldown-seconds: 1800 }
+    silent-night: { enabled: true, duration-seconds: 300, cooldown-seconds: 1800 }
+    military-evacuation: { enabled: true, duration-seconds: 300, cooldown-seconds: 3600 }
+    distress-call: { enabled: true, duration-seconds: 120, cooldown-seconds: 1800 }
+    lab-breach: { enabled: true, duration-seconds: 300, cooldown-seconds: 3600 }
+    lockdown: { enabled: true, duration-seconds: 120, cooldown-seconds: 1200 }
+    boss-hunt: { enabled: true, duration-seconds: 600, cooldown-seconds: 3600 }
+  supply-drop:
+    items: [scrap, bandage, medkit, ammo_9mm]
+  military-evacuation:
+    extraction-radius-blocks: 16.0
+    reward-item: ration_pack
+    reward-amount: 1
+  boss-hunt:
+    reward-item: medkit
+    reward-amount: 1
 
 ai:
   enabled: true
@@ -49,6 +105,7 @@ ai:
   noise-investigation-radius: 28.0
   target-memory-seconds: 20
   search-seconds: 12
+  search-radius-blocks: 8.0
   tracked-zombies-per-update: 32
 
 noise:
@@ -168,6 +225,7 @@ loot-search:
     bolt_sniper: { rarity: epic, weight: 1, min: 1, max: 1 }
 
 items:
+  keycard: { material: PAPER, name: '&bSecure Keycard', rarity: RARE, consume-on-use: false }
   bandage: { material: PAPER, name: '&fBandage', rarity: COMMON, cure: false, heal: 2.0 }
   medkit: { material: PAPER, name: '&aMedkit', rarity: UNCOMMON, cure: false, heal: 6.0, cooldown-seconds: 5 }
   cure_kit: { material: PAPER, name: '&bCure Kit', rarity: RARE, cure: true }
@@ -194,6 +252,7 @@ items:
   basic_repair_kit: { material: PAPER, name: '&7Basic Repair Kit', rarity: COMMON, repair-durability: 100, repair-cost-item: repair_supplies, repair-cost-amount: 1 }
   advanced_toolkit: { material: PAPER, name: '&bAdvanced Toolkit', rarity: RARE, repair-durability: 300, repair-cost-item: metal_parts, repair-cost-amount: 2 }
   handheld_radio: { material: COMPASS, name: '&eHandheld Radio', rarity: UNCOMMON, radio-alert: check_in, consume-on-use: false }
+  phone: { material: PAPER, name: '&bSurvivor Phone', rarity: UNCOMMON, consume-on-use: false }
   emergency_beacon: { material: REDSTONE_TORCH, name: '&cEmergency Beacon', rarity: RARE, radio-alert: distress, consume-on-use: false }
   gps_locator: { material: COMPASS, name: '&bGPS Locator', rarity: UNCOMMON, navigation-action: locate, consume-on-use: false }
   paper_map: { material: PAPER, name: '&fPaper Map', rarity: COMMON, navigation-action: list, consume-on-use: false }
@@ -355,6 +414,20 @@ radio:
     safehouse: '&a[Radio] %player% reports a safehouse.'
     supply_drop: '&6[Radio] %player% reports supplies.'
 
+phone:
+  enabled: true
+  battery:
+    max: 100
+    drain-per-minute: 1
+    message-cost: 1
+    sos-cost: 5
+    recharge-amount: 25
+    recharge-item: components
+  history-limit: 100
+  max-message-length: 200
+  contacts-only: false
+  notifications: true
+
 trader:
   enabled: false
   offers:
@@ -377,6 +450,8 @@ quests:
       target: 5
       reward-item: scrap
       reward-amount: 4
+      faction: survivors
+      reputation-reward: 5
     clear_the_road:
       name: '&cClear the Road'
       description: 'Eliminate 15 zombies to earn medical supplies.'
@@ -384,6 +459,14 @@ quests:
       target: 15
       reward-item: bandage
       reward-amount: 3
+      faction: survivors
+      reputation-reward: 10
+
+factions:
+  definitions:
+    survivors: { name: '&2Survivors' }
+    military: { name: '&9Military' }
+    research: { name: '&dResearch Division' }
 
 teams:
   enabled: true

@@ -7,6 +7,8 @@ import dev.kodari.zombieapocalypse.condition.SurvivalConditionManager;
 import dev.kodari.zombieapocalypse.config.ConfigManager;
 import dev.kodari.zombieapocalypse.device.PowerCctvService;
 import dev.kodari.zombieapocalypse.environment.AcidRainService;
+import dev.kodari.zombieapocalypse.environment.ToxicFogService;
+import dev.kodari.zombieapocalypse.event.DynamicEventService;
 import dev.kodari.zombieapocalypse.infection.InfectionManager;
 import dev.kodari.zombieapocalypse.item.CustomItemService;
 import dev.kodari.zombieapocalypse.item.FirearmService;
@@ -24,6 +26,9 @@ import dev.kodari.zombieapocalypse.command.StorageCommand;
 import dev.kodari.zombieapocalypse.command.TeamCommand;
 import dev.kodari.zombieapocalypse.breach.BreachService;
 import dev.kodari.zombieapocalypse.command.DashboardCommand;
+import dev.kodari.zombieapocalypse.command.SecurityCommand;
+import dev.kodari.zombieapocalypse.phone.PhoneService;
+import dev.kodari.zombieapocalypse.security.SecurityService;
 import dev.kodari.zombieapocalypse.recipe.RecipeRegistry;
 import dev.kodari.zombieapocalypse.regional.RegionalInfectionService;
 import dev.kodari.zombieapocalypse.storage.InfectionStore;
@@ -70,6 +75,10 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
     private SurvivorNpcService survivorNpcService;
     private TeamService teamService;
     private BreachService breachService;
+    private PhoneService phoneService;
+    private SecurityService securityService;
+    private ToxicFogService toxicFogService;
+    private DynamicEventService eventService;
     private volatile boolean debugOverride;
 
     @Override
@@ -101,16 +110,23 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
         firearmService = new FirearmService(this, configManager, itemService, noiseService, zombieService);
         radioService = new RadioService(configManager, noiseService, itemService);
         radioService.setTeamResolver(teamService);
+        phoneService = new PhoneService(this, configManager, itemService, radioService);
         waypointService = new WaypointService(this);
         protectionService = new ProtectionService(configManager, itemService);
         acidRainService = new AcidRainService(this, configManager, protectionService, infectionManager);
         acidRainService.start();
         powerCctvService = new PowerCctvService(this, configManager);
+        securityService = new SecurityService(this, configManager, itemService, powerCctvService);
+        eventService = new DynamicEventService(this, configManager, zombieService, infectionManager, powerCctvService,
+                securityService, radioService, noiseService, itemService);
+        eventService.start();
         traderService = new TraderService(this, configManager, itemService);
         questService = new QuestService(this, configManager, itemService);
         survivorNpcService = new SurvivorNpcService(this, configManager, traderService, questService);
         regionalInfectionStore = new RegionalInfectionStore(this);
         regionalInfectionService = new RegionalInfectionService(this, configManager, regionalInfectionStore);
+        toxicFogService = new ToxicFogService(this, configManager, protectionService, regionalInfectionService);
+        toxicFogService.start();
         survivalItemService = new SurvivalItemService(this, configManager, infectionManager, survivalConditions,
                 itemService, radioService, waypointService);
         recipeRegistry = new RecipeRegistry(this, configManager, itemService);
@@ -119,7 +135,10 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
         GameplayListener listener = new GameplayListener(this, configManager, infectionManager, survivalConditions, zombieService,
                 itemService, firearmService, survivalItemService, protectionService, storageService, noiseService, regionalInfectionService);
         Bukkit.getPluginManager().registerEvents(listener, this);
+        Bukkit.getPluginManager().registerEvents(phoneService, this);
         Bukkit.getPluginManager().registerEvents(powerCctvService, this);
+        Bukkit.getPluginManager().registerEvents(securityService, this);
+        Bukkit.getPluginManager().registerEvents(eventService, this);
         Bukkit.getPluginManager().registerEvents(breachService, this);
         Bukkit.getPluginManager().registerEvents(questService, this);
         Bukkit.getPluginManager().registerEvents(survivorNpcService, this);
@@ -152,6 +171,11 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
         DashboardCommand dashboardCommand = new DashboardCommand(this);
         Bukkit.getPluginManager().registerEvents(dashboardCommand, this);
         getCommand("zdashboard").setExecutor(dashboardCommand);
+
+        getCommand("zphone").setExecutor(phoneService);
+        getCommand("zphone").setTabCompleter(phoneService);
+
+        getCommand("zsecurity").setExecutor(new SecurityCommand(securityService));
 
         if (Bukkit.getPluginManager().getPlugin("WorldGuard") != null) {
             getLogger().warning("WorldGuard is present; breaching relies on BlockBreakEvent protection checks, so verify region denials on your server.");
@@ -241,6 +265,12 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
         if (acidRainService != null) {
             acidRainService.close();
         }
+        if (toxicFogService != null) {
+            toxicFogService.close();
+        }
+        if (eventService != null) {
+            eventService.close();
+        }
         if (powerCctvService != null) {
             powerCctvService.close();
         }
@@ -249,6 +279,12 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
         }
         if (teamService != null) {
             teamService.close();
+        }
+        if (phoneService != null) {
+            phoneService.close();
+        }
+        if (securityService != null) {
+            securityService.close();
         }
         if (breachService != null) {
             breachService.close();
@@ -337,6 +373,14 @@ public final class ZombieApocalypsePlugin extends JavaPlugin {
 
     public TeamService teams() {
         return teamService;
+    }
+
+    public PhoneService phones() {
+        return phoneService;
+    }
+
+    public DynamicEventService events() {
+        return eventService;
     }
 
     public boolean isDebugEnabled() {

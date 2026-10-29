@@ -29,6 +29,7 @@ public final class QuestService implements Listener, AutoCloseable {
     private final CustomItemService items;
     private final File dataFile;
     private final Map<UUID, Map<String, Progress>> progress = new HashMap<>();
+    private final Map<UUID, Map<String, Integer>> factionReputation = new HashMap<>();
 
     public QuestService(ZombieApocalypsePlugin plugin, ConfigManager config, CustomItemService items) {
         this.plugin = plugin;
@@ -51,7 +52,8 @@ public final class QuestService implements Listener, AutoCloseable {
             }
             quests.add(new Quest(id, section.getString("name", id), section.getString("description", ""),
                     section.getInt("target", 1), section.getString("reward-item", ""),
-                    section.getInt("reward-amount", 1)));
+                    section.getInt("reward-amount", 1), section.getString("faction", "survivors"),
+                    section.getInt("reputation-reward", 0)));
         }
         return List.copyOf(quests);
     }
@@ -72,7 +74,8 @@ public final class QuestService implements Listener, AutoCloseable {
             Progress state = playerProgress.get(quest.id());
             String status = state == null ? "&7available" : state.claimed() ? "&aclaimed"
                     : "&e" + Math.min(state.kills(), quest.target()) + "/" + quest.target() + " kills";
-            message(player, "&f" + quest.id() + " &7- " + quest.name() + " &8[" + status + "&8] &7- " + quest.description());
+            message(player, "&f" + quest.id() + " &7- " + quest.name() + " &8[" + status + "&8] &7- " + quest.description()
+                    + (quest.reputationReward() > 0 ? " &8| &d+" + quest.reputationReward() + " " + quest.reputationFaction() + " reputation" : ""));
         }
         message(player, "&7Use /zombie quest accept <id>, status, or claim <id>.");
     }
@@ -143,14 +146,38 @@ public final class QuestService implements Listener, AutoCloseable {
             rewards.add(reward);
         }
         progress.get(player.getUniqueId()).put(quest.id(), new Progress(state.kills(), true));
+        if (quest.reputationReward() > 0) {
+            Map<String, Integer> reputation = factionReputation.computeIfAbsent(player.getUniqueId(), ignored -> new HashMap<>());
+            long updated = (long) reputation.getOrDefault(quest.reputationFaction(), 0) + quest.reputationReward();
+            reputation.put(quest.reputationFaction(), (int) Math.min(1_000_000_000L, updated));
+        }
         save();
         for (ItemStack reward : rewards) {
             for (ItemStack overflow : player.getInventory().addItem(reward).values()) {
                 player.getWorld().dropItemNaturally(player.getLocation(), overflow);
             }
         }
-        message(player, "&aClaimed &f" + quest.rewardAmount() + " " + quest.rewardItem() + " &afor " + quest.name() + ".");
+        message(player, "&aClaimed &f" + quest.rewardAmount() + " " + quest.rewardItem() + " &afor " + quest.name()
+                + (quest.reputationReward() > 0 ? " &8and &d+" + quest.reputationReward() + " " + quest.reputationFaction() + " reputation" : ""));
         return true;
+    }
+
+    public int reputation(UUID player, String faction) {
+        return factionReputation.getOrDefault(player, Map.of()).getOrDefault(faction.toLowerCase(Locale.ROOT), 0);
+    }
+
+    public void showReputation(Player player) {
+        ConfigurationSection factions = config.getSection("factions.definitions");
+        if (factions == null || factions.getKeys(false).isEmpty()) {
+            message(player, "&eNo factions are configured.");
+            return;
+        }
+        message(player, "&6Faction reputation:");
+        for (String id : factions.getKeys(false)) {
+            String name = factions.getString(id + ".name", id);
+            message(player, "&f" + ChatColor.translateAlternateColorCodes('&', name) + " &7(" + id + "): &d"
+                    + reputation(player.getUniqueId(), id));
+        }
     }
 
     private Quest quest(String id) {
@@ -205,19 +232,34 @@ public final class QuestService implements Listener, AutoCloseable {
                 plugin.getLogger().warning("Ignoring invalid quest-progress UUID '" + rawUuid + "'.");
                 continue;
             }
-            ConfigurationSection playerSection = players.getConfigurationSection(rawUuid + ".quests");
-            if (playerSection == null) {
+            ConfigurationSection playerEntry = players.getConfigurationSection(rawUuid);
+            if (playerEntry == null) {
                 continue;
             }
-            Map<String, Progress> playerProgress = new LinkedHashMap<>();
-            for (String id : playerSection.getKeys(false)) {
-                ConfigurationSection entry = playerSection.getConfigurationSection(id);
-                if (entry != null && id.matches("[a-z0-9_-]{1,32}")) {
-                    playerProgress.put(id, new Progress(Math.max(0, entry.getInt("kills")), entry.getBoolean("claimed", false)));
+            ConfigurationSection reputationSection = playerEntry.getConfigurationSection("reputation");
+            if (reputationSection != null) {
+                Map<String, Integer> reputation = new HashMap<>();
+                for (String faction : reputationSection.getKeys(false)) {
+                    if (faction.matches("[a-z0-9_-]{1,32}")) {
+                        reputation.put(faction, Math.max(0, Math.min(1_000_000_000, reputationSection.getInt(faction))));
+                    }
+                }
+                if (!reputation.isEmpty()) {
+                    factionReputation.put(playerId, reputation);
                 }
             }
-            if (!playerProgress.isEmpty()) {
-                progress.put(playerId, playerProgress);
+            ConfigurationSection questsSection = playerEntry.getConfigurationSection("quests");
+            if (questsSection != null) {
+                Map<String, Progress> playerProgress = new LinkedHashMap<>();
+                for (String id : questsSection.getKeys(false)) {
+                    ConfigurationSection entry = questsSection.getConfigurationSection(id);
+                    if (entry != null && id.matches("[a-z0-9_-]{1,32}")) {
+                        playerProgress.put(id, new Progress(Math.max(0, entry.getInt("kills")), entry.getBoolean("claimed", false)));
+                    }
+                }
+                if (!playerProgress.isEmpty()) {
+                    progress.put(playerId, playerProgress);
+                }
             }
         }
     }
@@ -231,6 +273,10 @@ public final class QuestService implements Listener, AutoCloseable {
                 data.set(path + "kills", questEntry.getValue().kills());
                 data.set(path + "claimed", questEntry.getValue().claimed());
             }
+        }
+        for (Map.Entry<UUID, Map<String, Integer>> playerEntry : factionReputation.entrySet()) {
+            playerEntry.getValue().forEach((faction, reputation) ->
+                    data.set("players." + playerEntry.getKey() + ".reputation." + faction, reputation));
         }
         try {
             dataFile.getParentFile().mkdirs();
@@ -249,7 +295,8 @@ public final class QuestService implements Listener, AutoCloseable {
         save();
     }
 
-    public record Quest(String id, String name, String description, int target, String rewardItem, int rewardAmount) {
+    public record Quest(String id, String name, String description, int target, String rewardItem, int rewardAmount,
+                        String reputationFaction, int reputationReward) {
     }
 
     private record Progress(int kills, boolean claimed) {

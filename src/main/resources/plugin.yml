@@ -30,6 +30,15 @@ commands:
     description: Open the in-game survivor status dashboard.
     usage: /zdashboard
     permission: zombie.use
+  zphone:
+    description: Open and manage your persistent survivor phone.
+    usage: /zphone [msg|contact|group|history|block|mute|sos|settings|battery|recharge]
+    aliases: [phone]
+    permission: zombie.use
+  zsecurity:
+    description: Secure, authorize, and operate powered doors.
+    usage: /zsecurity lock|allow|revoke|keycard|pin|remove <door-id> ...
+    permission: zombie.use
 permissions:
   zombie.use:
     description: Use public Zombie Apocalypse commands.
@@ -39,6 +48,15 @@ permissions:
     default: op
   zombie.cctv:
     description: View and list powered CCTV cameras.
+    default: true
+  zombie.power.manage:
+    description: Operate registered power breakers.
+    default: op
+  zombie.security.admin:
+    description: Administer secure doors and access lists.
+    default: op
+  zombie.security.manage:
+    description: Register and manage doors you own.
     default: true
   zombie.quest:
     description: View, accept and complete survivor quests.

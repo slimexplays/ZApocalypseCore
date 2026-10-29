@@ -19,3 +19,15 @@
 - Added optional timed container searches with rarity-weighted rewards and persistent per-container cooldowns. The feature is disabled by default and fails closed when WorldGuard is installed without an adapter.
 - Configured Maven for Paper API `26.3.build.222-stable` and Java 25. Paper target availability was checked; project compilation and runtime remain unverified.
 - This is not a complete Phase 3 release. Security devices, CCTV, power, events, NPC/quests, dashboard, protection-plugin adapters, custom visual assets, and full integration testing remain outstanding.
+
+## Unreleased — partial phone, power, events, security, and progression
+
+- Added owner/serial-bound survivor phones with GUI, private/group messages, persistent offline history, contacts, blocks/mutes, SOS, notifications, settings, battery drain, and charger integration.
+- Extended power devices with cables/connectors, breakers, batteries, load limits, charging stations, forced blackouts, persistence, and outage-aware CCTV sessions.
+- Added powered monitor/laptop/terminal CCTV GUIs, camera status and bounded motion logs, and enforced CCTV permissions on direct camera interactions.
+- Added owner-managed powered doors with salted PIN hashes, access lists, bound keycards, fail-closed power loss, and lockdown support.
+- Added configurable toxic fog in regional infection categories and persistent quest-based faction reputation.
+- Added a persisted event lifecycle with configurable duration/cooldown and gameplay for all twelve requested event IDs; auto-start is optional and disabled by default.
+- Added bounded zombie target-memory and nearby-player reacquisition without block breaking.
+- Regenerated five shared firearm textures. Sniper and heavy textures remain invalid because generation could not complete.
+- Build and live-server tests are not verified; see `BUILD_TEST_REPORT.md` and `FEATURE_AUDIT.md` for remaining gaps and release status.
